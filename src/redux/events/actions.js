@@ -1,6 +1,6 @@
 import { ActionTypes } from './store';
 
-class SettingsActions {
+class EventsActions {
   addEventAction(event) {
     return dispatch => {
       dispatch({
@@ -19,5 +19,5 @@ class SettingsActions {
   }
 }
 
-const settingsActions = new SettingsActions();
-export default settingsActions;
+const eventActions = new EventsActions();
+export default eventActions;

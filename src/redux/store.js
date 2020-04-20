@@ -7,7 +7,7 @@ import rootReducer from './rootReducer';
 const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
-  whitelist: ['settings']
+  whitelist: ['settings', 'handshakes', 'events']
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

@@ -1,27 +1,25 @@
 import * as React from 'react';
 import { SafeAreaView, View, Text, FlatList, Button } from 'react-native';
+import DeviceInfo from 'react-native-device-info';
 import reduxContainer from '../redux/reduxContainer';
-import settingsActions from '../redux/settings/actions';
 import NearbyAPI from '../utils/nearbyAPI';
 import { styles } from './styles';
+import EventsActions from '../redux/events/actions';
 
 class NearbyContainer extends React.Component {
-  componentDidMount() {
-    if (!this.props.publishCode) {
-      const code = 1000 + Math.floor(Math.random() * 1000);
-      this.props.changePublishCodeAction(code);
-    }
-    NearbyAPI.init();
-  }
-
   resetHandler = () => {
     NearbyAPI.init();
   };
 
+  clearLogsHandler = () => {
+    this.props.clearEventsAction();
+  };
+
   renderItem = ({ item }) => (
     <View style={styles.eventContainer}>
-      <Text style={styles.eventType}>{item.event}</Text>
-      <Text style={styles.eventMessage}>{item.message}</Text>
+      <Text style={styles.eventType}>
+        {item.time} {item.event} {item.message}
+      </Text>
     </View>
   );
 
@@ -33,12 +31,15 @@ class NearbyContainer extends React.Component {
       <SafeAreaView>
         <View style={styles.headerContainer}>
           <Text>
-            My code is <Text style={styles.publishCode}>{publishCode}</Text>
+            Current publishing code:{' '}
+            <Text style={styles.publishCode}>{publishCode}</Text>
           </Text>
-          <Button title="Reset" onPress={this.resetHandler} />
+          <Button title="publish" onPress={this.resetHandler} />
+          <Button title="clear" onPress={this.clearLogsHandler} />
         </View>
-        <Text>Messages:</Text>
+        <Text> LOGS:</Text>
         <FlatList
+          style={{ marginBottom: 80 }}
           data={events}
           renderItem={this.renderItem}
           keyExtractor={this.keyExtractor}
@@ -56,7 +57,7 @@ function mapStateToProps(state) {
 }
 
 const dispatchToProps = {
-  changePublishCodeAction: settingsActions.changePublishCodeAction
+  clearEventsAction: EventsActions.clearEventsAction
 };
 
 export default reduxContainer(

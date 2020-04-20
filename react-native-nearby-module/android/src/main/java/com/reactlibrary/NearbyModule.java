@@ -1,6 +1,7 @@
 package com.reactlibrary;
 
 import android.app.PendingIntent;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -30,7 +31,8 @@ import com.google.android.gms.nearby.messages.Strategy;
 import com.google.android.gms.nearby.messages.SubscribeCallback;
 import com.google.android.gms.nearby.messages.SubscribeOptions;
 
-public class NearbyModule extends ReactContextBaseJavaModule implements LifecycleEventListener, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+public class NearbyModule extends ReactContextBaseJavaModule implements LifecycleEventListener,
+        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
     private final ReactApplicationContext reactContext;
 
@@ -48,19 +50,11 @@ public class NearbyModule extends ReactContextBaseJavaModule implements Lifecycl
     private static int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
 
     private enum NearbyMessageEvent {
-        CONNECTED("CONNECTED"),
-        CONNECTION_SUSPENDED("CONNECTION_SUSPENDED"),
-        CONNECTION_FAILED("CONNECTION_FAILED"),
-        DISCONNECTED("DISCONNECTED"),
-        MESSAGE_FOUND("MESSAGE_FOUND"),
-        MESSAGE_LOST("MESSAGE_LOST"),
-        DISTANCE_CHANGED("DISTANCE_CHANGED"),
-        BLE_SIGNAL_CHANGED("BLE_SIGNAL_CHANGED"),
-        PUBLISH_SUCCESS("PUBLISH_SUCCESS"),
-        PUBLISH_FAILED("PUBLISH_FAILED"),
-        SUBSCRIBE_SUCCESS("SUBSCRIBE_SUCCESS"),
-        SUBSCRIBE_FAILED("SUBSCRIBE_FAILED")
-        ;
+        CONNECTED("CONNECTED"), CONNECTION_SUSPENDED("CONNECTION_SUSPENDED"), CONNECTION_FAILED("CONNECTION_FAILED"),
+        DISCONNECTED("DISCONNECTED"), MESSAGE_FOUND("MESSAGE_FOUND"), MESSAGE_LOST("MESSAGE_LOST"),
+        DISTANCE_CHANGED("DISTANCE_CHANGED"), BLE_SIGNAL_CHANGED("BLE_SIGNAL_CHANGED"),
+        PUBLISH_SUCCESS("PUBLISH_SUCCESS"), PUBLISH_FAILED("PUBLISH_FAILED"), SUBSCRIBE_SUCCESS("SUBSCRIBE_SUCCESS"),
+        SUBSCRIBE_FAILED("SUBSCRIBE_FAILED"), STRATEGY("STRATEGY");
 
         private final String _type;
 
@@ -100,7 +94,7 @@ public class NearbyModule extends ReactContextBaseJavaModule implements Lifecycl
         public void onDistanceChanged(Message message, Distance distance) {
             super.onDistanceChanged(message, distance);
             Log.d(getName(), "Distance Changed: " + message.toString() + " " + distance.getMeters() + "m");
-            emitEvent(NearbyMessageEvent.DISTANCE_CHANGED, message, (int)distance.getMeters());
+            emitEvent(NearbyMessageEvent.DISTANCE_CHANGED, message, (int) distance.getMeters());
         }
 
         @Override
@@ -117,22 +111,19 @@ public class NearbyModule extends ReactContextBaseJavaModule implements Lifecycl
 
     private synchronized GoogleApiClient getGoogleAPIInstance() {
         if (_googleAPIClient == null) {
-            _googleAPIClient = new GoogleApiClient
-                    .Builder(this.getReactApplicationContext())
+            _googleAPIClient = new GoogleApiClient.Builder(this.getReactApplicationContext())
                     .addApi(Nearby.MESSAGES_API)
-                    //TODO: Add more functionality (Currently only: Messages API)
-                    .addConnectionCallbacks(this)
-                    .addOnConnectionFailedListener(this)
-                    .build();
+                    // TODO: Add more functionality (Currently only: Messages API)
+                    .addConnectionCallbacks(this).addOnConnectionFailedListener(this).build();
         }
         return _googleAPIClient;
     }
 
     private PublishOptions createPublishOptions() {
-        Strategy pubSubStrategy = new Strategy.Builder().setTtlSeconds(86400).build();
+        Strategy pubSubStrategy = new Strategy.Builder().setTtlSeconds(60)
+                .setDistanceType(Strategy.DISTANCE_TYPE_EARSHOT).build();
 
-        PublishOptions options = new PublishOptions.Builder()
-                .setStrategy(pubSubStrategy)
+        PublishOptions options = new PublishOptions.Builder().setStrategy(pubSubStrategy)
                 .setCallback(new PublishCallback() {
                     @Override
                     public void onExpired() {
@@ -143,17 +134,15 @@ public class NearbyModule extends ReactContextBaseJavaModule implements Lifecycl
     }
 
     private SubscribeOptions createSubscribeOptions() {
-        Strategy pubSubStrategy = new Strategy.Builder().setTtlSeconds(86400).build();
+        Strategy pubSubStrategy = new Strategy.Builder().setTtlSeconds(60).build();
 
-        SubscribeOptions options = new SubscribeOptions.Builder()
-                .setStrategy(pubSubStrategy)
+        SubscribeOptions options = new SubscribeOptions.Builder().setStrategy(Strategy.BLE_ONLY)
                 .setCallback(new SubscribeCallback() {
                     @Override
                     public void onExpired() {
                         super.onExpired();
                     }
-                })
-                .build();
+                }).build();
         return options;
     }
 
@@ -165,10 +154,7 @@ public class NearbyModule extends ReactContextBaseJavaModule implements Lifecycl
         GoogleApiAvailability googleApi = GoogleApiAvailability.getInstance();
         int availability = googleApi.isGooglePlayServicesAvailable(getReactApplicationContext());
         boolean result = availability == ConnectionResult.SUCCESS;
-        if(!result &&
-           showErrorDialog &&
-           googleApi.isUserResolvableError(availability)
-        ) {
+        if (!result && showErrorDialog && googleApi.isUserResolvableError(availability)) {
             googleApi.getErrorDialog(getCurrentActivity(), availability, PLAY_SERVICES_RESOLUTION_REQUEST).show();
         }
         return result;
@@ -176,23 +162,25 @@ public class NearbyModule extends ReactContextBaseJavaModule implements Lifecycl
 
     /**
      *
-     * @param apiKey - Note: API is unused for Android. Must be set in the AndroidManifest.
+     * @param apiKey - Note: API is unused for Android. Must be set in the
+     *               AndroidManifest.
      */
     @ReactMethod
     public void connect(String apiKey, boolean bleOnly) {
-        if(!isMinimumAndroidVersion()) {
-            emitEvent(NearbyMessageEvent.CONNECTION_FAILED, "Current Android version is too low: " + Integer.toString(Build.VERSION.SDK_INT));
+        if (!isMinimumAndroidVersion()) {
+            emitEvent(NearbyMessageEvent.CONNECTION_FAILED,
+                    "Current Android version is too low: " + Integer.toString(Build.VERSION.SDK_INT));
             return;
         }
-        if(!isGooglePlayServicesAvailable(true)) {
+        if (!isGooglePlayServicesAvailable(true)) {
             emitEvent(NearbyMessageEvent.CONNECTION_FAILED, "Google Play Services is not available on this device.");
             return;
         }
         _isBLEOnly = bleOnly;
         GoogleApiClient client = getGoogleAPIInstance();
-        if(client.isConnected()) {
+        if (client.isConnected()) {
             Log.w(getName(), "Google API Client is already connected.");
-            emitEvent(NearbyMessageEvent.CONNECTED, "Google API Client is already connected. " + _isBLEOnly.toString());
+            emitEvent(NearbyMessageEvent.CONNECTED, "Already connected.");
             return;
         }
         client.connect();
@@ -221,37 +209,37 @@ public class NearbyModule extends ReactContextBaseJavaModule implements Lifecycl
     public void publish(String message) {
         Log.i(getName(), "Attempting to publish: " + message);
         GoogleApiClient client = getGoogleAPIInstance();
-        if(client.isConnected()) {
+        if (client.isConnected()) {
             final Message publishMessage = new Message(message.getBytes());
             _publishedMessage = publishMessage;
             PublishOptions options = createPublishOptions();
             Log.i(getName(), "Publishing message: " + new String(publishMessage.getContent()));
-            Nearby.Messages.publish(client, publishMessage, options)
-                    .setResultCallback(new ResultCallback<Status>() {
-                        @Override
-                        public void onResult(Status status) {
-                            if (status.isSuccess()) {
-                                Log.i(getName(), "Published message.");
-                                _isPublishing = true;
-                                emitEvent(NearbyMessageEvent.PUBLISH_SUCCESS, publishMessage);
-                            } else {
-                                Log.e(getName(), "Publish failed");
-                                Log.e(getName(), status.getStatusMessage());
-                                _isPublishing = false;
-                                emitEvent(NearbyMessageEvent.PUBLISH_FAILED, "Publish failed: " + status.getStatusMessage());
-                            }
-                        }
-                    });
+            Nearby.Messages.publish(client, publishMessage, options).setResultCallback(new ResultCallback<Status>() {
+                @Override
+                public void onResult(Status status) {
+                    if (status.isSuccess()) {
+                        Log.i(getName(), "Published message successfully.");
+                        _isPublishing = true;
+                        emitEvent(NearbyMessageEvent.PUBLISH_SUCCESS, publishMessage);
+                    } else {
+                        Log.e(getName(), "Publish failed.");
+                        Log.e(getName(), status.getStatusMessage());
+                        _isPublishing = false;
+                        emitEvent(NearbyMessageEvent.PUBLISH_FAILED, "Publish failed: " + status.getStatusMessage());
+                    }
+                }
+            });
         } else {
             Log.e(getName(), "Google API Client not connected. Call " + getName() + ".connect() before publishing.");
-            emitEvent(NearbyMessageEvent.PUBLISH_FAILED, "Google API Client not connected. Call " + getName() + ".connect() before publishing.");
+            emitEvent(NearbyMessageEvent.PUBLISH_FAILED,
+                    "Google API Client not connected. Call " + getName() + ".connect() before publishing.");
         }
     }
 
     @ReactMethod
     public void unpublish() {
         GoogleApiClient client = getGoogleAPIInstance();
-        if(client.isConnected() && (_publishedMessage != null || _isPublishing)) {
+        if (client.isConnected() && (_publishedMessage != null || _isPublishing)) {
             Nearby.Messages.unpublish(client, _publishedMessage);
             _publishedMessage = null;
             _isPublishing = false;
@@ -267,7 +255,17 @@ public class NearbyModule extends ReactContextBaseJavaModule implements Lifecycl
     @ReactMethod
     public void subscribe() {
         GoogleApiClient client = getGoogleAPIInstance();
-        if(client.isConnected()) {
+        if (client.isConnected()) {
+            boolean hasBLE = getCurrentActivity().getPackageManager()
+                    .hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE);
+
+            if (hasBLE) {
+                Log.e(getName(), "STRATEGY BLE");
+                // emitEvent(NearbyMessageEvent.STRATEGY, "BLE");
+            } else {
+                // emitEvent(NearbyMessageEvent.STRATEGY, "UltraSonic");
+            }
+
             SubscribeOptions options = createSubscribeOptions();
             Nearby.Messages.subscribe(client, _messageListener, options)
                     .setResultCallback(new ResultCallback<Status>() {
@@ -276,25 +274,27 @@ public class NearbyModule extends ReactContextBaseJavaModule implements Lifecycl
                             if (status.isSuccess()) {
                                 Log.i(getName(), "Subscribe success.");
                                 _isSubscribing = true;
-                                emitEvent(NearbyMessageEvent.SUBSCRIBE_SUCCESS, "Subscribe success. Is currently subscribing.");
+                                emitEvent(NearbyMessageEvent.SUBSCRIBE_SUCCESS, "");
                             } else {
                                 Log.e(getName(), "Subscribe failed");
                                 Log.e(getName(), status.getStatusMessage());
                                 _isSubscribing = false;
-                                emitEvent(NearbyMessageEvent.SUBSCRIBE_FAILED, "Subscribe failed: " + status.getStatusMessage());
+                                emitEvent(NearbyMessageEvent.SUBSCRIBE_FAILED,
+                                        "Subscribe failed: " + status.getStatusMessage());
                             }
                         }
                     });
         } else {
             Log.e(getName(), "Google API Client not connected. Call " + getName() + ".connect() before subscribing.");
-            emitEvent(NearbyMessageEvent.SUBSCRIBE_FAILED, "Google API Client not connected. Call " + getName() + ".connect() before subscribing.");
+            emitEvent(NearbyMessageEvent.SUBSCRIBE_FAILED,
+                    "Google API Client not connected. Call " + getName() + ".connect() before subscribing.");
         }
     }
 
     @ReactMethod
     public void unsubscribe() {
         GoogleApiClient client = getGoogleAPIInstance();
-        if(client.isConnected())
+        if (client.isConnected())
             Nearby.Messages.unsubscribe(client, _messageListener);
         Log.i(getName(), "Unsubscribe listener.");
         _isSubscribing = false;
@@ -302,9 +302,9 @@ public class NearbyModule extends ReactContextBaseJavaModule implements Lifecycl
 
     @Override
     public void onConnected(Bundle bundle) {
-        if(getGoogleAPIInstance().isConnected()) {
+        if (getGoogleAPIInstance().isConnected()) {
             Log.d(getName(), "Google API Client connected.");
-            emitEvent(NearbyMessageEvent.CONNECTED, "Google API Client is connected.");
+            emitEvent(NearbyMessageEvent.CONNECTED, "Google API connected.");
         } else {
             Log.e(getName(), "Google API Client not connected.");
         }
@@ -319,8 +319,9 @@ public class NearbyModule extends ReactContextBaseJavaModule implements Lifecycl
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
         Log.e(getName(), NearbyMessageEvent.CONNECTION_FAILED.toString() + " " + connectionResult.toString());
-        emitEvent(NearbyMessageEvent.CONNECTION_FAILED, "Google Client connection failed: " + connectionResult.getErrorMessage());
-        if(connectionResult.hasResolution()) {
+        emitEvent(NearbyMessageEvent.CONNECTION_FAILED,
+                "Google Client connection failed: " + connectionResult.getErrorMessage());
+        if (connectionResult.hasResolution()) {
             try {
                 PendingIntent pi = connectionResult.getResolution();
                 Log.d(getName(), "Attempting to launch permission modal after failure.");
@@ -335,10 +336,10 @@ public class NearbyModule extends ReactContextBaseJavaModule implements Lifecycl
     public void onHostResume() {
         Log.i(getName(), "onHostResume");
         String pubMsg = getPublishedMessageString();
-        if(_isPublishing && pubMsg != null) {
+        if (_isPublishing && pubMsg != null) {
             publish(pubMsg);
         }
-        if(_isSubscribing) {
+        if (_isSubscribing) {
             subscribe();
         }
 
@@ -374,7 +375,7 @@ public class NearbyModule extends ReactContextBaseJavaModule implements Lifecycl
         WritableMap params = Arguments.createMap();
         params.putString("event", event.toString());
         params.putString("message", message);
-        if(value != null) {
+        if (value != null) {
             params.putInt("value", value);
         }
         NearbyModule.emitEvent(getReactApplicationContext(), "subscribe", params);
@@ -382,8 +383,7 @@ public class NearbyModule extends ReactContextBaseJavaModule implements Lifecycl
 
     private static void emitEvent(ReactContext context, String event, Object object) {
         if (context != null) {
-            context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                    .emit(event, object);
+            context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(event, object);
         } else {
             Log.e("eventEmit", "Null context");
         }

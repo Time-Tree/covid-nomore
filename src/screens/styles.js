@@ -13,11 +13,11 @@ export const styles = StyleSheet.create({
     fontWeight: 'bold'
   },
   eventContainer: {
-    marginVertical: 10,
+    // marginVertical: 10,
     marginHorizontal: 25
   },
   eventType: {
-    fontWeight: 'bold'
+    // fontWeight: 'bold'
   },
   eventMessage: {
     color: 'gray'
