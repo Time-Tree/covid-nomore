@@ -134,9 +134,9 @@ public class NearbyModule extends ReactContextBaseJavaModule implements Lifecycl
     }
 
     private SubscribeOptions createSubscribeOptions() {
-        Strategy pubSubStrategy = new Strategy.Builder().setTtlSeconds(60).build();
+        Strategy pubSubStrategy = new Strategy.Builder().build();
 
-        SubscribeOptions options = new SubscribeOptions.Builder().setStrategy(Strategy.BLE_ONLY)
+        SubscribeOptions options = new SubscribeOptions.Builder().setStrategy(pubSubStrategy)
                 .setCallback(new SubscribeCallback() {
                     @Override
                     public void onExpired() {
