@@ -1,16 +1,19 @@
 import * as React from 'react';
-import { Text, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { WebView } from 'react-native-webview';
 import NearbyContainer from './NearbyContainer';
 import HandshakesContainer from './HandshakesContainer';
 
 function HomeScreen() {
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text>Nearby Demo with UltraSonic!</Text>
-    </View>
+    <WebView
+      source={{
+        uri:
+          'https://docs.google.com/forms/d/e/1FAIpQLScIMZNW6RFo_mH2zzj7-sV9zifeP-nlFy1MzQL7ibanJ9TOvA/viewform?embedded=true'
+      }}
+    />
   );
 }
 
