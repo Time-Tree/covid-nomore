@@ -5,6 +5,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import NearbyContainer from './NearbyContainer';
 import HandshakesContainer from './HandshakesContainer';
+import BackgroundAPI from '../utils/backgroundAPI';
 
 function HomeScreen() {
   return (
@@ -33,6 +34,7 @@ const screenOptions = ({ route }) => ({
 });
 
 export default function MainContainer() {
+  BackgroundAPI.init();
   return (
     <NavigationContainer>
       <Tab.Navigator

@@ -348,15 +348,15 @@ public class NearbyModule extends ReactContextBaseJavaModule implements Lifecycl
     @Override
     public void onHostPause() {
         Log.i(getName(), "onHostPause");
-        unpublish();
-        unsubscribe();
+        // unpublish();
+        // unsubscribe();
     }
 
     @Override
     public void onHostDestroy() {
         Log.i(getName(), "onHostDestroy");
-        unpublish();
-        unsubscribe();
+        // unpublish();
+        // unsubscribe();
     }
 
     private void emitEvent(NearbyMessageEvent event, Message message) {
