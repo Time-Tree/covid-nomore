@@ -129,7 +129,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.messagesdemo"
+        applicationId "com.covidnomore"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-  package="com.messagesdemo">
+  package="com.covidnomore">
 
     <uses-permission android:name="android.permission.INTERNET" />
 

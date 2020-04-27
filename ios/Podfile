@@ -44,8 +44,8 @@ def flipper_post_install(installer)
   end
 end
 
-target 'MessagesDemo' do
-  # Pods for MessagesDemo
+target 'CovidNoMore' do
+  # Pods for CovidNoMore
   pod 'FBLazyVector', :path => "../node_modules/react-native/Libraries/FBLazyVector"
   pod 'FBReactNativeSpec', :path => "../node_modules/react-native/Libraries/FBReactNativeSpec"
   pod 'RCTRequired', :path => "../node_modules/react-native/Libraries/RCTRequired"
@@ -81,7 +81,7 @@ target 'MessagesDemo' do
 
   pod 'react-native-webview', :path => '../node_modules/react-native-webview'
 
-  target 'MessagesDemoTests' do
+  target 'CovidNoMoreTests' do
     inherit! :complete
     # Pods for testing
   end
@@ -98,10 +98,10 @@ target 'MessagesDemo' do
   end
 end
 
-target 'MessagesDemo-tvOS' do
-  # Pods for MessagesDemo-tvOS
+target 'CovidNoMore-tvOS' do
+  # Pods for CovidNoMore-tvOS
 
-  target 'MessagesDemo-tvOSTests' do
+  target 'CovidNoMore-tvOSTests' do
     inherit! :search_paths
     # Pods for testing
   end
