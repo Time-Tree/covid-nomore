@@ -1,6 +1,10 @@
 import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
+  screen: {
+    backgroundColor: '#fefefe',
+    flex: 1
+  },
   headerContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',

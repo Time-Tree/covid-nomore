@@ -5,6 +5,7 @@ import reduxContainer from '../redux/reduxContainer';
 import NearbyAPI from '../utils/nearbyAPI';
 import { styles } from './styles';
 import EventsActions from '../redux/events/actions';
+import NavbarComponent from './components/NavbarComponent';
 
 class NearbyContainer extends React.Component {
   resetHandler = () => {
@@ -28,7 +29,8 @@ class NearbyContainer extends React.Component {
   render() {
     const { publishCode, events } = this.props;
     return (
-      <SafeAreaView>
+      <SafeAreaView style={styles.screen}>
+        <NavbarComponent title="Nearby Logs" />
         <View style={styles.headerContainer}>
           <Text>
             Current publishing code:{' '}
@@ -39,7 +41,6 @@ class NearbyContainer extends React.Component {
         </View>
         <Text> LOGS:</Text>
         <FlatList
-          style={{ marginBottom: 80 }}
           data={events}
           renderItem={this.renderItem}
           keyExtractor={this.keyExtractor}

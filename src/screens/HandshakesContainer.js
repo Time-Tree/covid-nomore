@@ -4,6 +4,7 @@ import DeviceInfo from 'react-native-device-info';
 import reduxContainer from '../redux/reduxContainer';
 import { styles } from './styles';
 import HandshakeActions from '../redux/handshakes/actions';
+import NavbarComponent from './components/NavbarComponent';
 
 class HandshakesContainer extends React.Component {
   renderItem = ({ item }) => (
@@ -17,7 +18,8 @@ class HandshakesContainer extends React.Component {
   render() {
     const { handshakes } = this.props;
     return (
-      <SafeAreaView>
+      <SafeAreaView style={styles.screen}>
+        <NavbarComponent title="Nearby Handshakes" />
         <View style={styles.headerContainer}>
           <Text>
             My device UUID:
@@ -27,7 +29,6 @@ class HandshakesContainer extends React.Component {
         </View>
         <Text>Handshakes:</Text>
         <FlatList
-          style={{ marginBottom: 80 }}
           data={handshakes}
           renderItem={this.renderItem}
           keyExtractor={this.keyExtractor}

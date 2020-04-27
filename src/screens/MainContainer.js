@@ -5,16 +5,20 @@ import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIc
 import { WebView } from 'react-native-webview';
 import NearbyContainer from './NearbyContainer';
 import HandshakesContainer from './HandshakesContainer';
+import NavbarComponent from './components/NavbarComponent';
 import BackgroundAPI from '../utils/backgroundAPI';
 
 function HomeScreen() {
   return (
-    <WebView
-      source={{
-        uri:
-          'https://docs.google.com/forms/d/e/1FAIpQLScIMZNW6RFo_mH2zzj7-sV9zifeP-nlFy1MzQL7ibanJ9TOvA/viewform?embedded=true'
-      }}
-    />
+    <>
+      <NavbarComponent title="Home" />
+      <WebView
+        source={{
+          uri:
+            'https://docs.google.com/forms/d/e/1FAIpQLScIMZNW6RFo_mH2zzj7-sV9zifeP-nlFy1MzQL7ibanJ9TOvA/viewform?embedded=true'
+        }}
+      />
+    </>
   );
 }
 
