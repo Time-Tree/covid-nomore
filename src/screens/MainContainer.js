@@ -6,7 +6,6 @@ import { WebView } from 'react-native-webview';
 import NearbyContainer from './NearbyContainer';
 import HandshakesContainer from './HandshakesContainer';
 import NavbarComponent from './components/NavbarComponent';
-import BackgroundAPI from '../utils/backgroundAPI';
 
 function HomeScreen() {
   return (
@@ -41,7 +40,6 @@ const screenOptions = ({ route }) => ({
 });
 
 export default function MainContainer() {
-  BackgroundAPI.init();
   return (
     <NavigationContainer>
       <Tab.Navigator

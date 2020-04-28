@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">CovidNoMore</string>
+    <string name="connectivity_channel_name">CovidNoMore Background Service</string>
+    <string name="connectivity_channel_description">CovidNoMore background related notifications</string>
+</resources>
