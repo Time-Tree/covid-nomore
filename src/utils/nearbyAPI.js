@@ -5,6 +5,7 @@ import { store } from '../redux/store';
 import eventsActions from '../redux/events/actions';
 import settingsActions from '../redux/settings/actions';
 import handshakeActions from '../redux/handshakes/actions';
+import keys from './keys';
 
 const NearbyModuleEmitter = new NativeEventEmitter(NearbyModule);
 
@@ -27,7 +28,7 @@ class NearbyAPI {
     this.changeCode();
     NearbyModule.unpublish();
     NearbyModule.unsubscribe();
-    NearbyModule.connect('AIzaSyDvS8l_WlCWvb582wXHewYF1Nbcn0HqIas', true);
+    NearbyModule.connect(keys.NEARBY_KEY, true);
   };
 
   changeCode = () => {
@@ -36,22 +37,49 @@ class NearbyAPI {
   };
 
   eventHandler = event => {
+    console.log('EVENT', JSON.stringify(event));
+    const date = new Date();
     if (event.event === 'CONNECTED') {
       this.connectedHandler();
     } else if (event.event === 'CONNECTION_FAILED') {
       setTimeout(this.connect, 5000);
     }
-    event.time = this.getTimestamp();
+    event.time = date.getTime();
+    event.formated = this.getTimestamp(date);
     if (event.event !== 'CONNECTED' && event.event !== 'SUBSCRIBE_SUCCESS') {
       store.dispatch(eventsActions.addEventAction(event));
     }
     if (event.event === 'MESSAGE_FOUND') {
       store.dispatch(
-        handshakeActions.addHandshakeAction(
-          this.getTimestamp() + ' Handshake with ' + event.message.split('-')[0]
-        )
+        handshakeActions.addHandshakeAction({
+          time: date.getTime(),
+          formated: this.getTimestamp(date),
+          target: event.message.split('-')[0]
+        })
       );
     }
+  };
+
+  getTimestamp = time => {
+    let hour = time.getHours();
+    if (hour < 10) {
+      hour = '0' + hour;
+    }
+    let minutes = time.getMinutes();
+    if (minutes < 10) {
+      minutes = '0' + minutes;
+    }
+    let seconds = time.getSeconds();
+    if (seconds < 10) {
+      seconds = '0' + seconds;
+    }
+    let ms = time.getMilliseconds();
+    if (ms < 10) {
+      ms = '00' + ms;
+    } else if (ms < 100) {
+      ms = '0' + ms;
+    }
+    return `[${hour}:${minutes}:${seconds}.${ms}]`;
   };
 
   connectedHandler = () => {
@@ -60,11 +88,6 @@ class NearbyAPI {
       DeviceInfo.getUniqueId() + '-' + state.settings.publishCode.toString();
     NearbyModule.publish(publishCode);
     NearbyModule.subscribe();
-  };
-
-  getTimestamp = () => {
-    const time = new Date();
-    return `[${time.getHours()}:${time.getMinutes()}:${time.getSeconds()}.${time.getMilliseconds()}]`;
   };
 }
 

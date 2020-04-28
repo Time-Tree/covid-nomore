@@ -5,7 +5,7 @@ function settingsReducer(state = initialState, action) {
     case ActionTypes.ADD_EVENT: {
       return {
         ...state,
-        events: [...state.events, action.payload]
+        events: [action.payload, ...state.events]
       };
     }
     case ActionTypes.CLEAR_EVENTS: {

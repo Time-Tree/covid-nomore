@@ -17,6 +17,14 @@ class HandshakeActions {
       });
     };
   }
+
+  saveHandshakeAction() {
+    return dispatch => {
+      dispatch({
+        type: ActionTypes.SAVE_HANDSHAKES
+      });
+    };
+  }
 }
 
 const hadshakesActions = new HandshakeActions();

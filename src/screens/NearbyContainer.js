@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { SafeAreaView, View, Text, FlatList, Button } from 'react-native';
-import DeviceInfo from 'react-native-device-info';
 import reduxContainer from '../redux/reduxContainer';
 import NearbyAPI from '../utils/nearbyAPI';
 import { styles } from './styles';
@@ -19,7 +18,7 @@ class NearbyContainer extends React.Component {
   renderItem = ({ item }) => (
     <View style={styles.eventContainer}>
       <Text style={styles.eventType}>
-        {item.time} {item.event} {item.message}
+        {item.formated} {item.event} {item.message}
       </Text>
     </View>
   );

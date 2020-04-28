@@ -12,6 +12,12 @@ export const styles = StyleSheet.create({
     marginVertical: 10,
     marginHorizontal: 25
   },
+  container: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginHorizontal: 25
+  },
   publishCode: {
     color: 'darkblue',
     fontWeight: 'bold'

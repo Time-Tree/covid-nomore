@@ -5,13 +5,19 @@ function handshakesReducer(state = initialState, action) {
     case ActionTypes.ADD_HANDSHAKE: {
       return {
         ...state,
-        handshakes: [...state.handshakes, action.payload]
+        handshakes: [action.payload, ...state.handshakes]
       };
     }
     case ActionTypes.CLEAR_HANSHAKES: {
       return {
         ...state,
         handshakes: []
+      };
+    }
+    case ActionTypes.SAVE_HANDSHAKES: {
+      return {
+        ...state,
+        lastUpdated: new Date().getTime()
       };
     }
     default:
