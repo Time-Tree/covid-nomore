@@ -37,7 +37,6 @@ class NearbyAPI {
   };
 
   eventHandler = event => {
-    console.log('EVENT', JSON.stringify(event));
     const date = new Date();
     if (event.event === 'CONNECTED') {
       this.connectedHandler();
