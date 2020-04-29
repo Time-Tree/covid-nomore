@@ -30,6 +30,9 @@ import com.google.android.gms.nearby.messages.Strategy;
 import com.google.android.gms.nearby.messages.SubscribeCallback;
 import com.google.android.gms.nearby.messages.SubscribeOptions;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -57,7 +60,7 @@ public class NearbyService extends Service implements GoogleApiClient.Connection
     private Message _publishedMessage;
     private volatile Boolean _isPublishing = false;
     private volatile Boolean _isSubscribing = false;
-    private ArrayList<String> messages;
+    private ArrayList<JSONObject> events;
     private Boolean _isBLEOnly = false;
 
     private final IBinder myBinder = new NearbyBinder();
@@ -70,7 +73,7 @@ public class NearbyService extends Service implements GoogleApiClient.Connection
 
     @Override
     public void onCreate() {
-        Log.d(TAG, "onCreate NEARBY SERVICE");
+        Log.i(TAG, "onCreate NEARBY SERVICE");
         super.onCreate();
         connect(true);
         createBackgroundNotificationChannel();
@@ -78,7 +81,7 @@ public class NearbyService extends Service implements GoogleApiClient.Connection
                 Secure.ANDROID_ID);
         notificationManager = NotificationManagerCompat.from(this);
         startForeground(NOTIFICATION_CHANNEL_ID, buildForegroundNotification("CovidNoMore", "Background Service", true));
-        messages = new ArrayList<String>();
+        events = new ArrayList<JSONObject>();
     }
 
     @Override
@@ -94,7 +97,7 @@ public class NearbyService extends Service implements GoogleApiClient.Connection
             code = 1000 + new Random().nextInt(9000);
             Log.i(TAG, "New generated code = " + code);
             unpublish();
-//          TODO: verify if it is connected and subscribed
+            checkAndConnect();
             publish(code);
         }
     };
@@ -114,7 +117,7 @@ public class NearbyService extends Service implements GoogleApiClient.Connection
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        return null;
+        return myBinder;
     }
 
     private MessageListener _messageListener = new MessageListener() {
@@ -123,7 +126,7 @@ public class NearbyService extends Service implements GoogleApiClient.Connection
             super.onFound(message);
             String messageAsString = new String(message.getContent());
             Log.d(TAG, "Message Found: " + messageAsString);
-            addMessage("MESSAGE_FOUND = " + messageAsString);
+            createEvent("MESSAGE_FOUND", messageAsString);
         }
 
         @Override
@@ -131,21 +134,21 @@ public class NearbyService extends Service implements GoogleApiClient.Connection
             super.onLost(message);
             String messageAsString = new String(message.getContent());
             Log.d(TAG, "Message Lost: " + messageAsString);
-            addMessage("MESSAGE_LOST = " + messageAsString);
+            createEvent("MESSAGE_LOST", messageAsString);
         }
 
         @Override
         public void onDistanceChanged(Message message, Distance distance) {
             super.onDistanceChanged(message, distance);
             Log.d(TAG, "Distance Changed: " + message.toString() + " " + distance.getMeters() + "m");
-            addMessage("Distance Changed: " + message.toString() + " " + distance.getMeters() + "m");
+            createEvent("DISTANCE_CHANGED", message.toString() + " " + distance.getMeters() + "m");
         }
 
         @Override
         public void onBleSignalChanged(Message message, BleSignal bleSignal) {
             super.onBleSignalChanged(message, bleSignal);
             Log.d(TAG, "Distance Changed: " + message.toString() + " " + bleSignal.getRssi() + " rssi");
-            addMessage("Distance Changed: " + message.toString() + " " + bleSignal.getRssi() + " rssi");
+            createEvent("DISTANCE_CHANGED", message.toString() + " " + bleSignal.getRssi() + " rssi");
         }
     };
 
@@ -171,6 +174,7 @@ public class NearbyService extends Service implements GoogleApiClient.Connection
                 .setCallback(new PublishCallback() {
                     @Override
                     public void onExpired() {
+                        _isPublishing = false;
                         super.onExpired();
                     }
                 }).build();
@@ -184,6 +188,7 @@ public class NearbyService extends Service implements GoogleApiClient.Connection
                 .setCallback(new SubscribeCallback() {
                     @Override
                     public void onExpired() {
+                        _isSubscribing = false;
                         super.onExpired();
                     }
                 }).build();
@@ -207,18 +212,18 @@ public class NearbyService extends Service implements GoogleApiClient.Connection
 
     public void connect(boolean bleOnly) {
         if (!isMinimumAndroidVersion()) {
-            addMessage("CONNECTION_FAILED: Current Android version is too low: " + Integer.toString(Build.VERSION.SDK_INT));
+            createEvent("CONNECTION_FAILED", "Current Android version is too low: " + Integer.toString(Build.VERSION.SDK_INT));
             return;
         }
         if (!isGooglePlayServicesAvailable(true)) {
-            addMessage("CONNECTION_FAILED: Google Play Services is not available on this device.");
+            createEvent("CONNECTION_FAILED", "Google Play Services is not available on this device.");
             return;
         }
         _isBLEOnly = bleOnly;
         GoogleApiClient client = getGoogleAPIInstance();
         if (client.isConnected()) {
             Log.w(TAG, "Google API Client is already connected.");
-            addMessage("Already connected.");
+            createEvent("CONNECTED", "Already connected.");
             return;
         }
         client.connect();
@@ -228,7 +233,7 @@ public class NearbyService extends Service implements GoogleApiClient.Connection
         GoogleApiClient client = getGoogleAPIInstance();
         client.disconnect();
         Log.d(TAG, "Google API Client disconnected.");
-        addMessage("Google API Client is disconnected.");
+        createEvent("DISCONNECTED", "Google API Client is disconnected.");
     }
 
     public boolean isConnected() {
@@ -254,18 +259,18 @@ public class NearbyService extends Service implements GoogleApiClient.Connection
                     if (status.isSuccess()) {
                         Log.i(TAG, "Published message successfully.");
                         _isPublishing = true;
-                        addMessage("PUBLISH_SUCCESS " + publishMessage);
+                        createEvent("PUBLISH_SUCCESS", new String(publishMessage.getContent()));
                     } else {
                         Log.e(TAG, "Publish failed.");
                         Log.e(TAG, status.getStatusMessage());
                         _isPublishing = false;
-                        addMessage("Publish failed: " + status.getStatusMessage());
+                        createEvent("PUBLISH_FAILED", "Publish failed: " + status.getStatusMessage());
                     }
                 }
             });
         } else {
             Log.e(TAG, "Google API Client not connected. Call " + TAG + ".connect() before publishing.");
-            addMessage("Google API Client not connected. Call .connect() before publishing.");
+            createEvent("PUBLISH_FAILED", "Google API Client not connected. Call .connect() before publishing.");
         }
     }
 
@@ -291,9 +296,9 @@ public class NearbyService extends Service implements GoogleApiClient.Connection
 
             if (hasBLE) {
                 Log.e(TAG, "STRATEGY BLE");
-                addMessage("STRATEGY = BLE");
+                createEvent("STRATEGY", "BLE");
             } else {
-                addMessage("STRATEGY = UltraSonic");
+                createEvent("STRATEGY", "UltraSonic");
             }
 
             SubscribeOptions options = createSubscribeOptions();
@@ -304,18 +309,18 @@ public class NearbyService extends Service implements GoogleApiClient.Connection
                             if (status.isSuccess()) {
                                 Log.i(TAG, "Subscribe success.");
                                 _isSubscribing = true;
-                                messages.add("SUBSCRIBE_SUCCESS");
+                                createEvent("SUBSCRIBE_SUCCESS", "");
                             } else {
                                 Log.e(TAG, "Subscribe failed");
                                 Log.e(TAG, status.getStatusMessage());
                                 _isSubscribing = false;
-                                messages.add("Subscribe failed: " + status.getStatusMessage());
+                                createEvent("SUBSCRIBE_FAILED", status.getStatusMessage());
                             }
                         }
                     });
         } else {
             Log.e(TAG, "Google API Client not connected. Call " + TAG + ".connect() before subscribing.");
-            addMessage("Google API Client not connected. Call .connect() before subscribing.");
+            createEvent("CONNECTION_FAILED", "Google API Client not connected. Call .connect() before subscribing.");
         }
     }
 
@@ -331,7 +336,8 @@ public class NearbyService extends Service implements GoogleApiClient.Connection
     public void onConnected(Bundle bundle) {
         if (getGoogleAPIInstance().isConnected()) {
             Log.d(TAG, "Google API Client connected.");
-            addMessage("Google API connected.");
+            createEvent("CONNECTED", "Google API connected.");
+            this.subscribe();
         } else {
             Log.e(TAG, "Google API Client not connected.");
         }
@@ -340,13 +346,13 @@ public class NearbyService extends Service implements GoogleApiClient.Connection
     @Override
     public void onConnectionSuspended(int i) {
         Log.e(TAG, "CONNECTION_SUSPENDED " + i);
-        addMessage("Google Client connection suspended.");
+        createEvent("CONNECTION_SUSPENDED", "Google Client connection suspended.");
     }
 
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
         Log.e(TAG, "CONNECTION_FAILED " + connectionResult.toString());
-        addMessage("Google Client connection failed: " + connectionResult.getErrorMessage());
+        createEvent("CONNECTION_FAILED", "Google Client connection failed: " + connectionResult.getErrorMessage());
         if (connectionResult.hasResolution()) {
             try {
                 PendingIntent pi = connectionResult.getResolution();
@@ -358,23 +364,36 @@ public class NearbyService extends Service implements GoogleApiClient.Connection
         }
     }
 
-    public void addMessage(String message) {
-        String formattedDate = "[ " + getFormattedDate() + " ] ";
-        messages.add(formattedDate + message);
+    public void checkAndConnect() {
+        if (isConnected() == false) {
+            connect(_isBLEOnly);
+        }
+    }
+
+    public void createEvent(String eventType, String message) {
+        try {
+            JSONObject json = new JSONObject();
+            json.put("timestamp", Calendar.getInstance().getTimeInMillis());
+            json.put("formatDate", getFormattedDate());
+            json.put("eventType", eventType);
+            json.put("message", message);
+            events.add(json);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 
     public String getFormattedDate() {
         Date c = Calendar.getInstance().getTime();
         SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss:SS");
         String formattedDate = df.format(c);
-        Log.e(TAG, "formattedDate ===>  " + formattedDate);
         return formattedDate;
     }
 
-    public ArrayList<String> getMessages() {
-        ArrayList<String> oldMessages = new ArrayList<String>(messages);
-        messages.clear();
-        return oldMessages;
+    public ArrayList<JSONObject> getEvents() {
+        ArrayList<JSONObject> oldEvents = new ArrayList<JSONObject>(events);
+        events.clear();
+        return oldEvents;
     }
 
 

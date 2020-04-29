@@ -1,7 +1,8 @@
 export const initialState = {
-  publishCode: null
+  isSubscribing: false,
+  isConnected: false
 };
 
 export const ActionTypes = {
-  CHANGE_PUBLISH_CODE: 'CHANGE_PUBLISH_CODE'
+  CHANGE_STATUS: 'CHANGE_STATUS'
 };

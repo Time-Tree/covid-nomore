@@ -1,16 +1,11 @@
 import * as React from 'react';
 import { SafeAreaView, View, Text, FlatList, Button } from 'react-native';
 import reduxContainer from '../redux/reduxContainer';
-import NearbyAPI from '../utils/nearbyAPI';
 import { styles } from './styles';
 import EventsActions from '../redux/events/actions';
 import NavbarComponent from './components/NavbarComponent';
 
 class NearbyContainer extends React.Component {
-  resetHandler = () => {
-    NearbyAPI.init();
-  };
-
   clearLogsHandler = () => {
     this.props.clearEventsAction();
   };
@@ -18,7 +13,7 @@ class NearbyContainer extends React.Component {
   renderItem = ({ item }) => (
     <View style={styles.eventContainer}>
       <Text style={styles.eventType}>
-        {item.formated} {item.event} {item.message}
+        [{item.formated}] {item.event}: {item.message}
       </Text>
     </View>
   );
@@ -26,16 +21,23 @@ class NearbyContainer extends React.Component {
   keyExtractor = (item, index) => index.toString();
 
   render() {
-    const { publishCode, events } = this.props;
+    const { events, isConnected, isSubscribing } = this.props;
     return (
       <SafeAreaView style={styles.screen}>
         <NavbarComponent title="Nearby Logs" />
         <View style={styles.headerContainer}>
           <Text>
-            Current publishing code:{' '}
-            <Text style={styles.publishCode}>{publishCode}</Text>
+            Connected:{' '}
+            <Text style={[styles.value, !isConnected && styles.error]}>
+              {isConnected ? 'TRUE' : 'FALSE'}
+            </Text>
           </Text>
-          <Button title="publish" onPress={this.resetHandler} />
+          <Text>
+            Subscribing:{' '}
+            <Text style={[styles.value, !isSubscribing && styles.error]}>
+              {isSubscribing ? 'TRUE' : 'FALSE'}
+            </Text>
+          </Text>
           <Button title="clear" onPress={this.clearLogsHandler} />
         </View>
         <Text> LOGS:</Text>
@@ -51,7 +53,8 @@ class NearbyContainer extends React.Component {
 
 function mapStateToProps(state) {
   return {
-    publishCode: state.settings.publishCode,
+    isSubscribing: state.settings.isSubscribing,
+    isConnected: state.settings.isConnected,
     events: state.events.events
   };
 }

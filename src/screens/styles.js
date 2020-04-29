@@ -18,9 +18,12 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: 25
   },
-  publishCode: {
-    color: 'darkblue',
+  value: {
+    color: 'darkgreen',
     fontWeight: 'bold'
+  },
+  error: {
+    color: 'red'
   },
   eventContainer: {
     // marginVertical: 10,

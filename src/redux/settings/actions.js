@@ -1,11 +1,11 @@
 import { ActionTypes } from './store';
 
 class SettingsActions {
-  changePublishCodeAction(publishCode) {
+  changeStatusAction(status) {
     return dispatch => {
       dispatch({
-        type: ActionTypes.CHANGE_PUBLISH_CODE,
-        payload: publishCode
+        type: ActionTypes.CHANGE_STATUS,
+        payload: status
       });
     };
   }

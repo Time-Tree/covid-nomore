@@ -2,10 +2,11 @@ import { ActionTypes, initialState } from './store';
 
 function settingsReducer(state = initialState, action) {
   switch (action.type) {
-    case ActionTypes.CHANGE_PUBLISH_CODE: {
+    case ActionTypes.CHANGE_STATUS: {
       return {
         ...state,
-        publishCode: action.payload
+        isSubscribing: action.payload.isSubscribing,
+        isConnected: action.payload.isConnected
       };
     }
     default:

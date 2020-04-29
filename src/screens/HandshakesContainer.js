@@ -20,7 +20,7 @@ class HandshakesContainer extends React.Component {
   renderItem = ({ item }) => (
     <View style={styles.eventContainer}>
       <Text style={styles.eventType}>
-        {item.formated} handshake with {item.target}
+        [{item.formated}] handshake with {item.target}
       </Text>
     </View>
   );
@@ -53,7 +53,7 @@ class HandshakesContainer extends React.Component {
       return 'N/A';
     }
     const time = new Date(t);
-    return `${time.getDay()}/${time.getMonth()}/${time.getFullYear()}  ${time.getHours()}:${time.getMinutes()}:${time.getSeconds()}.${time.getMilliseconds()}`;
+    return `${time.getDate()}/${time.getMonth()}/${time.getFullYear()}  ${time.getHours()}:${time.getMinutes()}:${time.getSeconds()}.${time.getMilliseconds()}`;
   };
 
   render() {
