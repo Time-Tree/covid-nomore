@@ -10,6 +10,15 @@ class HandshakeActions {
     };
   }
 
+  changeHandshakeAction(handshake) {
+    return dispatch => {
+      dispatch({
+        type: ActionTypes.CHANGE_HANDHAKE,
+        payload: handshake
+      });
+    };
+  }
+
   clearHandshakeAction() {
     return dispatch => {
       dispatch({
@@ -22,6 +31,15 @@ class HandshakeActions {
     return dispatch => {
       dispatch({
         type: ActionTypes.SAVE_HANDSHAKES
+      });
+    };
+  }
+
+  removeHanshakeAction(time) {
+    return dispatch => {
+      dispatch({
+        type: ActionTypes.REMOVE_HANDSHAKE,
+        payload: time
       });
     };
   }

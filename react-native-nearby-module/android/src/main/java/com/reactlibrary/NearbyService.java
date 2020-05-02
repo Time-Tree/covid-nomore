@@ -47,8 +47,8 @@ import androidx.core.app.NotificationManagerCompat;
 
 import static com.google.android.gms.nearby.messages.Strategy.TTL_SECONDS_INFINITE;
 
-
-public class NearbyService extends Service implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+public class NearbyService extends Service
+        implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
     private String androidId;
     static String TAG = "NearbyService";
@@ -77,10 +77,10 @@ public class NearbyService extends Service implements GoogleApiClient.Connection
         super.onCreate();
         connect(true);
         createBackgroundNotificationChannel();
-        androidId = Secure.getString(getContentResolver(),
-                Secure.ANDROID_ID);
+        androidId = Secure.getString(getContentResolver(), Secure.ANDROID_ID);
         notificationManager = NotificationManagerCompat.from(this);
-        startForeground(NOTIFICATION_CHANNEL_ID, buildForegroundNotification("CovidNoMore", "Background Service", true));
+        startForeground(NOTIFICATION_CHANNEL_ID,
+                buildForegroundNotification("CovidNoMore", "Background Service", true));
         events = new ArrayList<JSONObject>();
     }
 
@@ -92,24 +92,29 @@ public class NearbyService extends Service implements GoogleApiClient.Connection
     }
 
     private Timer timer;
-    private TimerTask timerTask = new TimerTask() {
-        public void run() {
-            code = 1000 + new Random().nextInt(9000);
-            Log.i(TAG, "New generated code = " + code);
-            unpublish();
-            checkAndConnect();
-            publish(code);
-        }
-    };
 
     public void startTimer() {
+        if (timer != null) {
+            timer.cancel();
+            timer.purge();
+        }
+        TimerTask timerTask = new TimerTask() {
+            public void run() {
+                code = 1000 + new Random().nextInt(9000);
+                Log.i(TAG, "New generated code = " + code);
+                unpublish();
+                checkAndConnect();
+                publish(code);
+            }
+        };
         timer = new Timer();
-        timer.schedule(timerTask, 1000, 10000);
+        timer.schedule(timerTask, 1000, 30000);
     }
 
     public void stoptimertask() {
         if (timer != null) {
             timer.cancel();
+            timer.purge();
             timer = null;
         }
     }
@@ -158,8 +163,7 @@ public class NearbyService extends Service implements GoogleApiClient.Connection
 
     private synchronized GoogleApiClient getGoogleAPIInstance() {
         if (_googleAPIClient == null) {
-            _googleAPIClient = new GoogleApiClient.Builder(this)
-                    .addApi(Nearby.MESSAGES_API)
+            _googleAPIClient = new GoogleApiClient.Builder(this).addApi(Nearby.MESSAGES_API)
                     // TODO: Add more functionality (Currently only: Messages API)
                     .addConnectionCallbacks(this).addOnConnectionFailedListener(this).build();
         }
@@ -204,15 +208,17 @@ public class NearbyService extends Service implements GoogleApiClient.Connection
         int availability = googleApi.isGooglePlayServicesAvailable(this);
         boolean result = availability == ConnectionResult.SUCCESS;
         if (!result && showErrorDialog && googleApi.isUserResolvableError(availability)) {
-//            TODO:
-//            googleApi.getErrorDialog(getCurrentActivity(), availability, PLAY_SERVICES_RESOLUTION_REQUEST).show();
+            // TODO:
+            // googleApi.getErrorDialog(getCurrentActivity(), availability,
+            // PLAY_SERVICES_RESOLUTION_REQUEST).show();
         }
         return result;
     }
 
     public void connect(boolean bleOnly) {
         if (!isMinimumAndroidVersion()) {
-            createEvent("CONNECTION_FAILED", "Current Android version is too low: " + Integer.toString(Build.VERSION.SDK_INT));
+            createEvent("CONNECTION_FAILED",
+                    "Current Android version is too low: " + Integer.toString(Build.VERSION.SDK_INT));
             return;
         }
         if (!isGooglePlayServicesAvailable(true)) {
@@ -291,8 +297,7 @@ public class NearbyService extends Service implements GoogleApiClient.Connection
     public void subscribe() {
         GoogleApiClient client = getGoogleAPIInstance();
         if (client.isConnected()) {
-            boolean hasBLE = getPackageManager()
-                    .hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE);
+            boolean hasBLE = getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE);
 
             if (hasBLE) {
                 Log.e(TAG, "STRATEGY BLE");
@@ -396,14 +401,10 @@ public class NearbyService extends Service implements GoogleApiClient.Connection
         return oldEvents;
     }
 
-
     private Notification buildForegroundNotification(String title, String text, boolean nonRemovable) {
         NotificationCompat.Builder b = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL);
 
-        b.setOngoing(false)
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle(title)
-                .setContentText(text)
+        b.setOngoing(false).setSmallIcon(R.mipmap.ic_launcher).setContentTitle(title).setContentText(text)
                 .setOngoing(nonRemovable);
 
         return (b.build());
