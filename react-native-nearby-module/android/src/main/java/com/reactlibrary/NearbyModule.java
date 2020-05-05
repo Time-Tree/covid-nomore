@@ -1,9 +1,12 @@
 package com.reactlibrary;
 
 import android.content.ComponentName;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.IBinder;
 import android.util.Log;
 
@@ -17,12 +20,14 @@ import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.bridge.WritableNativeArray;
 import com.facebook.react.bridge.WritableNativeMap;
 
+import com.facebook.react.modules.storage.ReactDatabaseSupplier;
+
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Iterator;
-
 
 public class NearbyModule extends ReactContextBaseJavaModule implements ServiceConnection {
 
@@ -42,7 +47,6 @@ public class NearbyModule extends ReactContextBaseJavaModule implements ServiceC
     public String getName() {
         return "NearbyModule";
     }
-
 
     @Override
     public void onServiceConnected(ComponentName name, IBinder binder) {
@@ -90,6 +94,71 @@ public class NearbyModule extends ReactContextBaseJavaModule implements ServiceC
             map.putBoolean("isConnected", isConnected);
             promise.resolve(map);
         }
+    }
+
+    @ReactMethod
+    public void toggleState(Promise promise) {
+        if (mBound) {
+
+
+            try {
+                SQLiteDatabase writableDatabase = ReactDatabaseSupplier.getInstance(this.reactContext).getWritableDatabase();
+                String json = getDB();
+
+                JSONObject value = new JSONObject(json);
+                JSONObject eventsObj = new JSONObject(value.getString("events"));
+                JSONArray eventsArray = eventsObj.getJSONArray("events");
+                JSONObject newEvent = new JSONObject("{\"event\":\"TEST\"}");
+                eventsArray.put(newEvent);
+                eventsObj.put("events", eventsArray);
+                value.put("events", eventsObj);
+                String addToDbValue = value.toString();
+
+                ContentValues insertValues = new ContentValues();
+                insertValues.put("value", addToDbValue);
+                writableDatabase.insert("catalystLocalStorage", null, insertValues);
+
+                writableDatabase.close();
+
+            } catch (Exception e) {
+                // do something
+            }
+            String events = getDB();
+            promise.resolve(events);
+        }
+
+    }
+
+    private String getDB() {
+            Cursor catalystLocalStorage = null;
+            SQLiteDatabase readableDatabase = null;
+            String response = null;
+
+            try {
+                readableDatabase = ReactDatabaseSupplier.getInstance(this.reactContext).getReadableDatabase();
+                catalystLocalStorage = readableDatabase.query("catalystLocalStorage", new String[] { "key", "value" },
+                        null, null, null, null, null);
+                if (catalystLocalStorage.moveToFirst()) {
+                    do {
+                        try {
+                            response = catalystLocalStorage.getString(catalystLocalStorage.getColumnIndex("value"));
+                        } catch (Exception e) {
+                            // do something
+                        }
+                    } while (catalystLocalStorage.moveToNext());
+                }
+            } finally {
+                if (catalystLocalStorage != null) {
+                    catalystLocalStorage.close();
+                }
+
+                if (readableDatabase != null) {
+                    readableDatabase.close();
+                }
+
+            }
+
+        return response;
     }
 
     private static WritableMap convertJsonToMap(JSONObject jsonObject) throws JSONException {

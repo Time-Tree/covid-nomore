@@ -40,6 +40,15 @@ class NearbyAPI {
       store.dispatch(settingsActions.changeStatusAction(response));
     } catch (error) {}
   };
+
+  toggleState = async () => {
+    try {
+      const response = await NearbyModule.toggleState();
+      console.log('TOGGLE STATE', response);
+    } catch (error) {
+      console.error('toggleState', error);
+    }
+  };
 }
 
 export default new NearbyAPI();
