@@ -171,8 +171,7 @@ public class NearbyService extends Service
     }
 
     private PublishOptions createPublishOptions() {
-        Strategy pubSubStrategy = new Strategy.Builder().setTtlSeconds(60)
-                .setDistanceType(Strategy.DISTANCE_TYPE_EARSHOT).build();
+        Strategy pubSubStrategy = new Strategy.Builder().setTtlSeconds(60).build();
 
         PublishOptions options = new PublishOptions.Builder().setStrategy(pubSubStrategy)
                 .setCallback(new PublishCallback() {
@@ -188,7 +187,7 @@ public class NearbyService extends Service
     private SubscribeOptions createSubscribeOptions() {
         Strategy pubSubStrategy = new Strategy.Builder().setTtlSeconds(TTL_SECONDS_INFINITE).build();
 
-        SubscribeOptions options = new SubscribeOptions.Builder().setStrategy(pubSubStrategy)
+        SubscribeOptions options = new SubscribeOptions.Builder().setStrategy(Strategy.BLE_ONLY)
                 .setCallback(new SubscribeCallback() {
                     @Override
                     public void onExpired() {
