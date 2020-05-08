@@ -1,6 +1,5 @@
 import * as React from 'react';
 import {
-  SafeAreaView,
   View,
   Text,
   FlatList,
@@ -128,7 +127,7 @@ class HandshakesContainer extends React.Component {
     const { lastUpdated, handshakes } = this.props;
     const { pending } = this.state;
     return (
-      <SafeAreaView style={styles.screen}>
+      <View style={styles.screen}>
         <NavbarComponent title="Nearby Handshakes" />
         <View style={styles.headerContainer}>
           <Text>
@@ -151,7 +150,7 @@ class HandshakesContainer extends React.Component {
           renderItem={this.renderItem}
           keyExtractor={this.keyExtractor}
         />
-      </SafeAreaView>
+      </View>
     );
   }
 }

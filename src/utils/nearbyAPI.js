@@ -3,8 +3,13 @@ import { store } from '../redux/store';
 import eventsActions from '../redux/events/actions';
 import handshakeActions from '../redux/handshakes/actions';
 import settingsActions from '../redux/settings/actions';
+import keys from '../../keys';
 
 class NearbyAPI {
+  startService() {
+    NearbyModule.startService(keys.NEARBY_KEY);
+  }
+
   nearbyCheck() {
     this.getEvents();
     this.getStatus();
