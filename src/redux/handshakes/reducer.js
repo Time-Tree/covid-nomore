@@ -6,7 +6,7 @@ function handshakesReducer(state = initialState, action) {
     case ActionTypes.ADD_HANDSHAKE: {
       return {
         ...state,
-        handshakes: [action.payload, ...state.handshakes]
+        handshakes: [...action.payload, ...state.handshakes]
       };
     }
     case ActionTypes.CHANGE_HANDHAKE: {

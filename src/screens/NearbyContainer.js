@@ -4,15 +4,13 @@ import reduxContainer from '../redux/reduxContainer';
 import { styles } from './styles';
 import EventsActions from '../redux/events/actions';
 import NavbarComponent from './components/NavbarComponent';
+import 'react-native-console-time-polyfill';
 import NearbyApi from '../utils/nearbyAPI';
 
 class NearbyContainer extends React.Component {
   clearLogsHandler = () => {
     this.props.clearEventsAction();
-  };
-
-  toggleStateHander = () => {
-    NearbyApi.toggleState();
+    NearbyApi.clearEvents();
   };
 
   renderItem = ({ item }) => (
@@ -44,7 +42,6 @@ class NearbyContainer extends React.Component {
             </Text>
           </Text>
           <Button title="clear" onPress={this.clearLogsHandler} />
-          <Button title="toggle" onPress={this.toggleStateHander} />
         </View>
         <Text> LOGS:</Text>
         <FlatList

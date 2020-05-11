@@ -17,6 +17,15 @@ class EventsActions {
       });
     };
   }
+
+  setSync(payload) {
+    return dispatch => {
+      dispatch({
+        type: ActionTypes.SET_SYNC,
+        payload
+      });
+    };
+  }
 }
 
 const eventActions = new EventsActions();

@@ -5,8 +5,10 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
@@ -62,6 +64,7 @@ public class NearbyService extends Service
     private volatile Boolean _isSubscribing = false;
     private ArrayList<JSONObject> events;
     private Boolean _isBLEOnly = false;
+    private NearbySql dbHelper;
 
     private final IBinder myBinder = new NearbyBinder();
 
@@ -82,6 +85,7 @@ public class NearbyService extends Service
         startForeground(NOTIFICATION_CHANNEL_ID,
                 buildForegroundNotification("CovidNoMore", "Background Service", true));
         events = new ArrayList<JSONObject>();
+        dbHelper = new NearbySql(this.getApplicationContext());
     }
 
     @Override
@@ -377,13 +381,14 @@ public class NearbyService extends Service
 
     public void createEvent(String eventType, String message) {
         try {
-            JSONObject json = new JSONObject();
-            json.put("timestamp", Calendar.getInstance().getTimeInMillis());
-            json.put("formatDate", getFormattedDate());
-            json.put("eventType", eventType);
-            json.put("message", message);
-            events.add(json);
-        } catch (JSONException e) {
+//            JSONObject json = new JSONObject();
+//            json.put("timestamp", Calendar.getInstance().getTimeInMillis());
+//            json.put("formatDate", getFormattedDate());
+//            json.put("eventType", eventType);
+//            json.put("message", message);
+//            events.add(json);
+            addEvent(eventType, message, getFormattedDate(), Calendar.getInstance().getTimeInMillis());
+        } catch (Error e) {
             e.printStackTrace();
         }
     }
@@ -425,4 +430,32 @@ public class NearbyService extends Service
             notificationManager.createNotificationChannel(channel);
         }
     }
+
+    private long addEvent(String eventType, String message, String formatDate, Long timestamp) {
+        long newRowId = -1;
+        try {
+            SQLiteDatabase db = dbHelper.getWritableDatabase();
+            ContentValues values = new ContentValues();
+            values.put(NearbyEventContract.EventEntry.COLUMN_NAME_EVENT_TYPE, eventType);
+            values.put(NearbyEventContract.EventEntry.COLUMN_NAME_MESSAGE, message);
+            values.put(NearbyEventContract.EventEntry.COLUMN_NAME_FORMAT_DATE, formatDate);
+            values.put(NearbyEventContract.EventEntry.COLUMN_NAME_TIMESTAMP, timestamp);
+            newRowId = db.insert(NearbyEventContract.EventEntry.TABLE_NAME, null, values);
+            db.close();
+        } catch (Error e) {
+            e.printStackTrace();
+        }
+        return newRowId;
+    }
+
+    public void removeEvents() {
+        try {
+            SQLiteDatabase db = dbHelper.getWritableDatabase();
+            db.delete(NearbyEventContract.EventEntry.TABLE_NAME, null, null);
+            db.close();
+        } catch (Exception e) {
+            // do something
+        }
+    }
 }
+
