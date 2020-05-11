@@ -12,10 +12,7 @@ let _interval = null;
 
 function _handleAppStateChange(nextAppState) {
   if (nextAppState === 'active') {
-    NearbyAPI.nearbyCheck();
-    _interval = setInterval(() => {
-      NearbyAPI.nearbyCheck();
-    }, 10000);
+    startPoller();
   } else {
     if (_interval) {
       clearInterval(_interval);
@@ -23,10 +20,18 @@ function _handleAppStateChange(nextAppState) {
   }
 }
 
+function startPoller() {
+  NearbyAPI.nearbyCheck();
+  _interval = setInterval(() => {
+    NearbyAPI.nearbyCheck();
+  }, 10000);
+}
+
 export default class App extends Component {
   onBeforeLift = () => {};
 
   render() {
+    startPoller();
     console.disableYellowBox = true;
     return (
       <Provider store={store}>

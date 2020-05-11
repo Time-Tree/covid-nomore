@@ -1,11 +1,15 @@
 import * as React from 'react';
+import { Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import crashlytics from '@react-native-firebase/crashlytics';
+import DeviceInfo from 'react-native-device-info';
 import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { WebView } from 'react-native-webview';
 import NearbyContainer from './NearbyContainer';
 import HandshakesContainer from './HandshakesContainer';
 import NavbarComponent from './components/NavbarComponent';
+import NearbyAPI from '../utils/nearbyAPI';
 
 function HomeScreen() {
   return (
@@ -39,7 +43,18 @@ const screenOptions = ({ route }) => ({
   }
 });
 
+async function setCrashlytics() {
+  try {
+    await crashlytics().setCrashlyticsCollectionEnabled(true);
+    await crashlytics().setAttribute('uniqueId', DeviceInfo.getUniqueId());
+  } catch (error) {
+    // console.log('error', error);
+  }
+}
+
 export default function MainContainer() {
+  setCrashlytics();
+  if (Platform.OS === 'ios') NearbyAPI.startService();
   return (
     <NavigationContainer>
       <Tab.Navigator

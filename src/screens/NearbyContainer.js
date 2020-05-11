@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { SafeAreaView, View, Text, FlatList, Button } from 'react-native';
+import { View, Text, FlatList, Button } from 'react-native';
 import reduxContainer from '../redux/reduxContainer';
 import { styles } from './styles';
 import EventsActions from '../redux/events/actions';
@@ -23,7 +23,7 @@ class NearbyContainer extends React.Component {
   render() {
     const { events, isConnected, isSubscribing } = this.props;
     return (
-      <SafeAreaView style={styles.screen}>
+      <View style={styles.screen}>
         <NavbarComponent title="Nearby Logs" />
         <View style={styles.headerContainer}>
           <Text>
@@ -46,7 +46,7 @@ class NearbyContainer extends React.Component {
           renderItem={this.renderItem}
           keyExtractor={this.keyExtractor}
         />
-      </SafeAreaView>
+      </View>
     );
   }
 }
