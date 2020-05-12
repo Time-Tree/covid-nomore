@@ -1,13 +1,13 @@
 #import "NearbyService.h"
 #import <GNSMessages.h>
 #import <CoreBluetooth/CoreBluetooth.h>
+#import <BackgroundTasks/BackgroundTasks.h>
 #include <stdlib.h>
 
 /// The main message manager to handle connection, publications, and subscriptions.
 static GNSMessageManager *_messageManager = nil;
 static NSString *_apiKey = nil;
-static BOOL _isBLEOnly = false;
-static NSTimer *timer;
+NSTimer *silenceTimer;
 static NSString *uniqueIdentifier;
 static int code;
 static CBCentralManager *myCentralManager;
@@ -15,27 +15,46 @@ static NSMutableArray *events;
 
 @implementation NearbyService
 
+- init {
+    self = [super init];
+    if ([UIApplication instancesRespondToSelector:@selector(registerUserNotificationSettings:)]) {
+        [[UIApplication sharedApplication] registerUserNotificationSettings:
+         [UIUserNotificationSettings settingsForTypes:
+          UIUserNotificationTypeAlert | UIUserNotificationTypeBadge | UIUserNotificationTypeSound
+                                           categories:nil]];
+    }
+    
+    [self setBackgroundTask];
+    return self;
+}
+
+- (void) setBackgroundTask {
+    UIBackgroundTaskIdentifier bgTask;
+    UIApplication  *app = [UIApplication sharedApplication];
+    bgTask = [app beginBackgroundTaskWithExpirationHandler:^{
+        [app endBackgroundTask:bgTask];
+    }];
+}
 
 - (void) startService:(nonnull NSString*) apiKey {
     uniqueIdentifier = [[[UIDevice currentDevice] identifierForVendor] UUIDString];
     [self createMessageManagerWithApiKey: apiKey];
     if([NSThread isMainThread] == false) {
         dispatch_async(dispatch_get_main_queue(), ^{
-            NSLog(@"-------------------------> Am inceput din if");
             [self setTimer];
         });
     } else {
-        NSLog(@"-------------------------> Am inceput din else");
         [self setTimer];
     }
     events = [NSMutableArray array];
 }
 
 - (void) setTimer {
-    timer = [NSTimer scheduledTimerWithTimeInterval: 10.0
-                                             target: self
-                                           selector: @selector(startTimer)
-                                           userInfo: nil repeats:YES];
+    [self startTimer];
+    self.silenceTimer = [NSTimer scheduledTimerWithTimeInterval: 30.0
+                                                         target: self
+                                                       selector: @selector(startTimer)
+                                                       userInfo: nil repeats:YES];
 }
 
 - (void) startTimer {
@@ -48,7 +67,7 @@ static NSMutableArray *events;
 
 - (void) stopTimer {
     NSLog(@"stopTimer");
-    [timer invalidate];
+    [self.silenceTimer invalidate];
 }
 
 - (id)createMessageManagerWithApiKey:(nonnull NSString*) apiKey {
@@ -77,12 +96,6 @@ static NSMutableArray *events;
     return _messageManager;
 }
 
-- (void) connect: (nonnull NSString *)apiKey isBLEOnly:(BOOL)bleOnly {
-    NSLog(@"connect");
-    // iOS Doesn't have a connect: method
-    _isBLEOnly = bleOnly;
-}
-
 - (void) disconnect {
     NSLog(@"disconnect");
     // iOS Doesn't have a disconnect: method
@@ -93,12 +106,11 @@ static NSMutableArray *events;
 }
 
 - (Boolean) isConnected {
-    NSLog(@"isConnected");
     @synchronized(self) {
         if(_messageManager == nil) {
-                return false;
-            } else {
-                return true;
+            return false;
+        } else {
+            return true;
         }
     }
 }
@@ -124,7 +136,7 @@ static NSMutableArray *events;
         GNSMessage *message = [GNSMessage messageWithContent: [messageString dataUsingEncoding: NSUTF8StringEncoding]];
         _publication = [[self sharedMessageManager] publicationWithMessage: message paramsBlock:^(GNSPublicationParams *params) {
             params.strategy = [GNSStrategy strategyWithParamsBlock:^(GNSStrategyParams *params) {
-                params.discoveryMediums = _isBLEOnly ? kGNSDiscoveryMediumsBLE : kGNSDiscoveryModeDefault;
+                params.allowInBackground = YES;
             }];
         }];
         [self createEvent: @"PUBLISH_SUCCESS" withMessage:messageString];
@@ -150,24 +162,25 @@ static NSMutableArray *events;
                     reason:@"Messenger not connected. Call connect: before subscribing."
                     userInfo:nil];
         }
+        __weak NearbyService *weakSelf = self;
         // Create _subscription object
         _subscription = [[self sharedMessageManager] subscriptionWithMessageFoundHandler:^(GNSMessage *message) {
+            // Send a local notification if not in the foreground.
+            if ([UIApplication sharedApplication].applicationState != UIApplicationStateActive) {
+                UILocalNotification *localNotification = [[UILocalNotification alloc] init];
+                localNotification.alertBody = @"Message received";
+                [[UIApplication sharedApplication] presentLocalNotificationNow:localNotification];
+            }
             NSLog(@"MESSAGE_FOUND: %@", message);
             NSString *messageString = [[NSString alloc] initWithData:message.content encoding: NSUTF8StringEncoding];
-            [self createEvent: @"MESSAGE_FOUND" withMessage:messageString];
+            [weakSelf createEvent: @"MESSAGE_FOUND" withMessage:messageString];
         } messageLostHandler:^(GNSMessage *message) {
             NSLog(@"MESSAGE_LOST: %@", message);
             NSString *messageString = [[NSString alloc] initWithData:message.content encoding: NSUTF8StringEncoding];
-            [self createEvent: @"MESSAGE_LOST" withMessage:messageString];
+            [weakSelf createEvent: @"MESSAGE_LOST" withMessage:messageString];
         } paramsBlock:^(GNSSubscriptionParams *params) {
             params.strategy = [GNSStrategy strategyWithParamsBlock:^(GNSStrategyParams *params) {
-                params.allowInBackground = false; //TODO: Make this configurable
-                params.discoveryMediums = _isBLEOnly ? kGNSDiscoveryMediumsBLE : kGNSDiscoveryModeDefault;
-                if (_isBLEOnly == YES) {
-                    [self createEvent: @"STRATEGY" withMessage:@"BLE"];
-                } else {
-                    [self createEvent: @"STRATEGY" withMessage:@"UltraSonic"];
-                }
+                params.allowInBackground = YES;
             }];
         }];
         [self createEvent: @"SUBSCRIBE_SUCCESS" withMessage:@""];
@@ -237,7 +250,9 @@ static NSMutableArray *events;
 }
 
 - (NSMutableArray *) getEvents {
-    return events;
+    NSMutableArray *newEvents = [NSMutableArray arrayWithArray:events];
+    [events removeAllObjects];
+    return newEvents;
 }
 
 @end
