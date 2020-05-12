@@ -5,6 +5,7 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.bluetooth.BluetoothAdapter;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -44,6 +45,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
@@ -65,6 +67,7 @@ public class NearbyService extends Service
     private ArrayList<JSONObject> events;
     private Boolean _isBLEOnly = false;
     private NearbySql dbHelper;
+    private NearbyBLEScanner nearbyBLEScanner;
 
     private final IBinder myBinder = new NearbyBinder();
 
@@ -74,6 +77,7 @@ public class NearbyService extends Service
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     public void onCreate() {
         Log.i(TAG, "onCreate NEARBY SERVICE");
@@ -86,6 +90,7 @@ public class NearbyService extends Service
                 buildForegroundNotification("CovidNoMore", "Background Service", true));
         events = new ArrayList<JSONObject>();
         dbHelper = new NearbySql(this.getApplicationContext());
+        nearbyBLEScanner = new NearbyBLEScanner(dbHelper);
     }
 
     @Override
@@ -103,12 +108,27 @@ public class NearbyService extends Service
             timer.purge();
         }
         TimerTask timerTask = new TimerTask() {
+            @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
             public void run() {
                 code = 1000 + new Random().nextInt(9000);
                 Log.i(TAG, "New generated code = " + code);
                 unpublish();
                 checkAndConnect();
                 publish(code);
+
+                BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+                if (mBluetoothAdapter == null) {
+                    // Device does not support Bluetooth
+                    Log.i("BLE Adapter", "NO supported");
+                } else if (!mBluetoothAdapter.isEnabled()) {
+                    // Bluetooth is not enabled :)
+                    Log.i("BLE Adapter", "NOT Enabled");
+                } else {
+                    // Bluetooth is enabled
+                    Log.i("BLE Adapter", "Ok");
+                    nearbyBLEScanner.start();
+                }
+
             }
         };
         timer = new Timer();
@@ -143,7 +163,7 @@ public class NearbyService extends Service
             super.onLost(message);
             String messageAsString = new String(message.getContent());
             Log.d(TAG, "Message Lost: " + messageAsString);
-            createEvent("MESSAGE_LOST", messageAsString);
+//            createEvent("MESSAGE_LOST", messageAsString);
         }
 
         @Override

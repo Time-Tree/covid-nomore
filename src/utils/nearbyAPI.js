@@ -7,6 +7,7 @@ import settingsActions from '../redux/settings/actions';
 
 class NearbyAPI {
   nearbyCheck() {
+    console.log('Nearby check');
     this.getEvents();
     this.getStatus();
   }
@@ -52,7 +53,7 @@ class NearbyAPI {
       if (newEvents.length) {
         const lastSync = newEvents[newEvents.length - 1].timestamp;
         await db.executeSql(
-          `DELETE FROM NearbyEvents n WHERE n.timestamp <= ${lastSync}`
+          `DELETE FROM NearbyEvents WHERE timestamp <= ${lastSync}`
         );
       }
       db.close();

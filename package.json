@@ -26,6 +26,7 @@
     "react-native-gesture-handler": "^1.6.1",
     "react-native-get-location": "^1.4.2",
     "react-native-nearby-module": "file:react-native-nearby-module",
+    "react-native-permissions": "^2.1.4",
     "react-native-reanimated": "^1.8.0",
     "react-native-safe-area-context": "^0.7.3",
     "react-native-screens": "^2.4.0",
