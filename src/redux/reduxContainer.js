@@ -6,10 +6,7 @@ function reduxContainer(WrappedComponent, mapStateToProps, dispatchToProps) {
     return bindActionCreators(dispatchToProps, dispatch);
   }
 
-  return connect(
-    mapStateToProps,
-    mapDispatchToProps
-  )(WrappedComponent);
+  return connect(mapStateToProps, mapDispatchToProps)(WrappedComponent);
 }
 
 export default reduxContainer;

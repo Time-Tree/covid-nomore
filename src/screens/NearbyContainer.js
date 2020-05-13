@@ -4,19 +4,32 @@ import reduxContainer from '../redux/reduxContainer';
 import { styles } from './styles';
 import EventsActions from '../redux/events/actions';
 import NavbarComponent from './components/NavbarComponent';
+import 'react-native-console-time-polyfill';
+import NearbyApi from '../utils/nearbyAPI';
 
 class NearbyContainer extends React.Component {
   clearLogsHandler = () => {
     this.props.clearEventsAction();
+    NearbyApi.clearEvents();
   };
 
-  renderItem = ({ item }) => (
-    <View style={styles.eventContainer}>
-      <Text style={styles.eventType}>
-        [{item.formated}] {item.event}: {item.message}
-      </Text>
-    </View>
-  );
+  renderItem = ({ item }) => {
+    let color = 'darkmagenta';
+    if (item.event === 'BLE SCAN') {
+      color = 'darkblue';
+    } else if (item.event === 'MESSAGE_FOUND') {
+      color = 'darkgreen';
+    }
+    return (
+      <View style={styles.eventContainer}>
+        <Text style={{ ...styles.eventType, color }}>
+          [{item.formated}]{' '}
+          <Text style={{ fontWeight: 'bold' }}>{item.event}</Text>:{' '}
+          {item.message}
+        </Text>
+      </View>
+    );
+  };
 
   keyExtractor = (item, index) => index.toString();
 

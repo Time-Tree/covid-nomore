@@ -1,9 +1,12 @@
 package com.reactlibrary;
 
 import android.content.ComponentName;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.IBinder;
 import android.util.Log;
 
@@ -17,12 +20,14 @@ import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.bridge.WritableNativeArray;
 import com.facebook.react.bridge.WritableNativeMap;
 
+import com.facebook.react.modules.storage.ReactDatabaseSupplier;
+
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Iterator;
-
 
 public class NearbyModule extends ReactContextBaseJavaModule implements ServiceConnection {
 
@@ -42,7 +47,6 @@ public class NearbyModule extends ReactContextBaseJavaModule implements ServiceC
     public String getName() {
         return "NearbyModule";
     }
-
 
     @Override
     public void onServiceConnected(ComponentName name, IBinder binder) {
@@ -92,6 +96,15 @@ public class NearbyModule extends ReactContextBaseJavaModule implements ServiceC
         }
     }
 
+    @ReactMethod
+    public void toggleState(Promise promise) {
+        if (mBound) {
+            nearbyService.removeEvents();
+            promise.resolve(true);
+        }
+    }
+
+
     private static WritableMap convertJsonToMap(JSONObject jsonObject) throws JSONException {
         WritableMap map = new WritableNativeMap();
 
@@ -115,4 +128,5 @@ public class NearbyModule extends ReactContextBaseJavaModule implements ServiceC
         }
         return map;
     }
+
 }
