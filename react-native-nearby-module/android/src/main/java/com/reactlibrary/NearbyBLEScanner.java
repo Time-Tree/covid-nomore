@@ -61,7 +61,9 @@ public class NearbyBLEScanner {
                             msg = "NM: " + sr.getDeviceName();
                             msg = msg + " TX: " + sr.getTxPowerLevel();
                             msg = msg + " AF: " + sr.getAdvertiseFlags();
-                            msg = msg + " SU: " + sr.getServiceUuids().toString();
+                            if (sr.getServiceUuids() != null) {
+                                msg = msg + " SU: " + sr.getServiceUuids().toString();
+                            }
                             Log.i("BLE SCAN FOUND", msg);
                             addEvent("BLE SCAN", msg, getFormattedDate(), Calendar.getInstance().getTimeInMillis());
                         }
