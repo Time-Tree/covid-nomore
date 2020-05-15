@@ -12,5 +12,6 @@
 - (Boolean) isSubscribing;
 - (Boolean) isConnected;
 - (void) checkAndConnect;
+- (void) deleteAllData;
 
 @end

@@ -1,4 +1,5 @@
 #import "NearbyService.h"
+#import "DBManager.h"
 #import <GNSMessages.h>
 #import <CoreBluetooth/CoreBluetooth.h>
 #import <BackgroundTasks/BackgroundTasks.h>
@@ -7,24 +8,27 @@
 /// The main message manager to handle connection, publications, and subscriptions.
 static GNSMessageManager *_messageManager = nil;
 static NSString *_apiKey = nil;
-NSTimer *silenceTimer;
 static NSString *uniqueIdentifier;
 static int code;
 static CBCentralManager *myCentralManager;
 static NSMutableArray *events;
+static DBManager *myDBManager;
 
 @implementation NearbyService
 
 - init {
     self = [super init];
-    if ([UIApplication instancesRespondToSelector:@selector(registerUserNotificationSettings:)]) {
-        [[UIApplication sharedApplication] registerUserNotificationSettings:
-         [UIUserNotificationSettings settingsForTypes:
-          UIUserNotificationTypeAlert | UIUserNotificationTypeBadge | UIUserNotificationTypeSound
-                                           categories:nil]];
+    if([NSThread isMainThread]) {
+        if ([UIApplication instancesRespondToSelector:@selector(registerUserNotificationSettings:)]) {
+            [[UIApplication sharedApplication] registerUserNotificationSettings:
+             [UIUserNotificationSettings settingsForTypes:
+              UIUserNotificationTypeAlert | UIUserNotificationTypeBadge | UIUserNotificationTypeSound
+                                               categories:nil]];
+        }
     }
     
     [self setBackgroundTask];
+    myDBManager = [[DBManager alloc] init];
     return self;
 }
 
@@ -239,7 +243,7 @@ static NSMutableArray *events;
         @"formatDate": formattedDate,
         @"timestamp": timeStampObj
     };
-    [events addObject: dict];
+    [myDBManager saveData: dict];
 }
 
 - (NSString *) getFormattedDate {
@@ -253,6 +257,10 @@ static NSMutableArray *events;
     NSMutableArray *newEvents = [NSMutableArray arrayWithArray:events];
     [events removeAllObjects];
     return newEvents;
+}
+
+- (void) deleteAllData {
+    [myDBManager deleteAllData];
 }
 
 @end

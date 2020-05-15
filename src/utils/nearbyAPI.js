@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import NearbyModule from 'react-native-nearby-module';
 import SQLite from 'react-native-sqlite-storage';
 import { store } from '../redux/store';
@@ -12,7 +13,6 @@ class NearbyAPI {
   }
 
   nearbyCheck() {
-    console.log('Nearby check');
     this.getEvents();
     this.getStatus();
   }
@@ -22,7 +22,15 @@ class NearbyAPI {
       let { sync } = store.getState().events;
 
       SQLite.enablePromise(true);
-      const db = await SQLite.openDatabase('NearbyEvents');
+      let db;
+      if (Platform.OS === 'android') {
+        db = await SQLite.openDatabase('NearbyEvents');
+      } else {
+        db = await SQLite.openDatabase({
+          name: 'NearbyEvents.sqlite3',
+          location: 'Documents'
+        });
+      }
       console.log('Fetching events from sync', sync);
       const result = await db.executeSql(
         `SELECT * FROM NearbyEvents n WHERE n.timestamp > ${sync} ORDER BY n.timestamp DESC`

@@ -17,6 +17,7 @@ RCT_EXPORT_MODULE()
 }
 
 RCT_EXPORT_METHOD(startService: (nonnull NSString *)apiKey) {
+    nearbyService = [[NearbyService alloc] init];
     [nearbyService startService:apiKey];
 }
 
@@ -45,6 +46,13 @@ RCT_REMAP_METHOD(getStatus,
     } @catch(NSException *exception) {
         NSLog(@"getStatus error: %@", exception.reason);
     }
+}
+
+RCT_REMAP_METHOD(toggleState,
+                 toggleStateWithResolver:(RCTPromiseResolveBlock)resolve
+                 toggleStateRejecter:(RCTPromiseRejectBlock)reject) {
+    [nearbyService deleteAllData];
+    resolve([NSNumber numberWithBool:TRUE]);
 }
 
 @end
