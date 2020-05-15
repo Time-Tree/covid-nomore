@@ -20,24 +20,25 @@ static sqlite3 *sqlite3Database;
 - (void) createTable {
     NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
     NSString *documentsDirectory = [paths objectAtIndex:0];
-    self.databasePath =  [documentsDirectory stringByAppendingPathComponent:@"NearbyEvents.sqlite3"];
+    self.databasePath =  [documentsDirectory stringByAppendingPathComponent:@"NearbyEvents.sqlite"];
     NSFileManager *filemgr = [NSFileManager defaultManager];
     if ([filemgr fileExistsAtPath: self.databasePath] == NO) {
-        NSLog(@"Database already exists at filePath: %@", self.databasePath);
-    }
-    const char *dbPath = [self.databasePath UTF8String];
-    if (sqlite3_open(dbPath, &sqlite3Database) == SQLITE_OK) {
-        NSString *createTableSQL = [NSString stringWithFormat: @"CREATE TABLE IF NOT EXISTS %@ (ID integer primary key AUTOINCREMENT, %@ text, %@ text, %@ text, %@ text)", TABLE_NAME, COLUMN_NAME_EVENT_TYPE, COLUMN_NAME_MESSAGE, COLUMN_NAME_FORMAT_DATE, COLUMN_NAME_TIMESTAMP];
-        char *errMsg;
-        const char *sql_stmt = [createTableSQL UTF8String];
-        if (sqlite3_exec(sqlite3Database, sql_stmt, NULL, NULL, &errMsg) != SQLITE_OK) {
-            NSLog(@"Failed to create table: %s", sqlite3_errmsg(sqlite3Database));
+        const char *dbPath = [self.databasePath UTF8String];
+        if (sqlite3_open(dbPath, &sqlite3Database) == SQLITE_OK) {
+            NSString *createTableSQL = [NSString stringWithFormat: @"CREATE TABLE IF NOT EXISTS %@ (ID integer primary key AUTOINCREMENT, %@ text, %@ text, %@ text, %@ text)", TABLE_NAME, COLUMN_NAME_EVENT_TYPE, COLUMN_NAME_MESSAGE, COLUMN_NAME_FORMAT_DATE, COLUMN_NAME_TIMESTAMP];
+            char *errMsg;
+            const char *sql_stmt = [createTableSQL UTF8String];
+            if (sqlite3_exec(sqlite3Database, sql_stmt, NULL, NULL, &errMsg) != SQLITE_OK) {
+                NSLog(@"Failed to create table: %s", sqlite3_errmsg(sqlite3Database));
+            } else {
+                NSLog(@"%@ table created", TABLE_NAME);
+            }
+            sqlite3_close(sqlite3Database);
         } else {
-            NSLog(@"%@ table created", TABLE_NAME);
+            NSLog(@"Failed to open/create database: %s", sqlite3_errmsg(sqlite3Database));
         }
-        sqlite3_close(sqlite3Database);
     } else {
-        NSLog(@"Failed to open/create database: %s", sqlite3_errmsg(sqlite3Database));
+        NSLog(@"Database already exists at filePath: %@", self.databasePath);
     }
 }
     

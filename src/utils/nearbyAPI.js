@@ -27,7 +27,7 @@ class NearbyAPI {
         db = await SQLite.openDatabase('NearbyEvents');
       } else {
         db = await SQLite.openDatabase({
-          name: 'NearbyEvents.sqlite3',
+          name: 'NearbyEvents.sqlite',
           location: 'Documents'
         });
       }

@@ -1,5 +1,6 @@
 #import "NearbyService.h"
 #import "DBManager.h"
+#import "BLEScanner.h"
 #import <GNSMessages.h>
 #import <CoreBluetooth/CoreBluetooth.h>
 #import <BackgroundTasks/BackgroundTasks.h>
@@ -13,6 +14,7 @@ static int code;
 static CBCentralManager *myCentralManager;
 static NSMutableArray *events;
 static DBManager *myDBManager;
+static BLEScanner *myBLEScanner;
 
 @implementation NearbyService
 
@@ -25,10 +27,10 @@ static DBManager *myDBManager;
               UIUserNotificationTypeAlert | UIUserNotificationTypeBadge | UIUserNotificationTypeSound
                                                categories:nil]];
         }
+        myDBManager = [[DBManager alloc] init];
+        myBLEScanner = [[BLEScanner alloc] init];
     }
-    
     [self setBackgroundTask];
-    myDBManager = [[DBManager alloc] init];
     return self;
 }
 
@@ -67,6 +69,8 @@ static DBManager *myDBManager;
     [self unpublish];
     [self checkAndConnect];
     [self publish: code];
+    [myBLEScanner stopScan];
+    [myBLEScanner scan];
 }
 
 - (void) stopTimer {
@@ -180,8 +184,8 @@ static DBManager *myDBManager;
             [weakSelf createEvent: @"MESSAGE_FOUND" withMessage:messageString];
         } messageLostHandler:^(GNSMessage *message) {
             NSLog(@"MESSAGE_LOST: %@", message);
-            NSString *messageString = [[NSString alloc] initWithData:message.content encoding: NSUTF8StringEncoding];
-            [weakSelf createEvent: @"MESSAGE_LOST" withMessage:messageString];
+            // NSString *messageString = [[NSString alloc] initWithData:message.content encoding: NSUTF8StringEncoding];
+            // [weakSelf createEvent: @"MESSAGE_LOST" withMessage:messageString];
         } paramsBlock:^(GNSSubscriptionParams *params) {
             params.strategy = [GNSStrategy strategyWithParamsBlock:^(GNSStrategyParams *params) {
                 params.allowInBackground = YES;
