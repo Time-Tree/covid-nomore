@@ -1,6 +1,7 @@
 #import "NearbyService.h"
-#import "DBManager.h"
+#import "DBUtil.h"
 #import "BLEScanner.h"
+#import "BLEEmitter.h"
 #import <GNSMessages.h>
 #import <CoreBluetooth/CoreBluetooth.h>
 #import <BackgroundTasks/BackgroundTasks.h>
@@ -13,8 +14,9 @@ static NSString *uniqueIdentifier;
 static int code;
 static CBCentralManager *myCentralManager;
 static NSMutableArray *events;
-static DBManager *myDBManager;
+static DBUtil *myDBUtil;
 static BLEScanner *myBLEScanner;
+static BLEEmitter *myBLEEmitter;
 
 @implementation NearbyService
 
@@ -27,8 +29,9 @@ static BLEScanner *myBLEScanner;
               UIUserNotificationTypeAlert | UIUserNotificationTypeBadge | UIUserNotificationTypeSound
                                                categories:nil]];
         }
-        myDBManager = [[DBManager alloc] init];
+        myDBUtil = [[DBUtil alloc] init];
         myBLEScanner = [[BLEScanner alloc] init];
+        myBLEEmitter = [[BLEEmitter alloc] init];
     }
     [self setBackgroundTask];
     return self;
@@ -69,8 +72,8 @@ static BLEScanner *myBLEScanner;
     [self unpublish];
     [self checkAndConnect];
     [self publish: code];
-    [myBLEScanner stopScan];
     [myBLEScanner scan];
+    [myBLEEmitter startAdvertising:uniqueIdentifier];
 }
 
 - (void) stopTimer {
@@ -129,14 +132,14 @@ static BLEScanner *myBLEScanner;
     NSLog(@"Attempting to publish: %@", messageString);
     @try {
         if(![self isConnected]) {
-            [self createEvent: @"PUBLISH_FAILED" withMessage:@"Google API Client not connected. Call .connect() before publishing."];
+            [myDBUtil createEvent: @"PUBLISH_FAILED" withMessage:@"Google API Client not connected. Call .connect() before publishing."];
             @throw [NSException
                     exceptionWithName:@"NotConnected"
                     reason:@"Messenger not connected. Call connect: before publishing."
                     userInfo:nil];
         }
         if(messageString == nil) {
-            [self createEvent: @"PUBLISH_FAILED" withMessage:@"Cannot publish an empty message"];
+            [myDBUtil createEvent: @"PUBLISH_FAILED" withMessage:@"Cannot publish an empty message"];
             NSLog(@"Cannot publish an empty message");
             return;
         }
@@ -147,11 +150,11 @@ static BLEScanner *myBLEScanner;
                 params.allowInBackground = YES;
             }];
         }];
-        [self createEvent: @"PUBLISH_SUCCESS" withMessage:messageString];
+        [myDBUtil createEvent: @"PUBLISH_SUCCESS" withMessage:messageString];
         NSLog(@"Successfully published: %@", messageString);
     } @catch(NSException *exception) {
         if(exception.reason != nil) {
-            [self createEvent: @"PUBLISH_FAILED" withMessage:exception.reason];
+            [myDBUtil createEvent: @"PUBLISH_FAILED" withMessage:exception.reason];
             NSLog(@"Publish failed: %@", exception.reason);
         }
     }
@@ -164,13 +167,12 @@ static BLEScanner *myBLEScanner;
     if([NSThread isMainThread] == false) return;
     @try {
         if(![self isConnected]) {
-            [self createEvent: @"SUBSCRIBE_FAILED" withMessage: @"Google API Client not connected. Call .connect() before publishing."];
+            [myDBUtil createEvent: @"SUBSCRIBE_FAILED" withMessage: @"Google API Client not connected. Call .connect() before publishing."];
             @throw [NSException
                     exceptionWithName:@"NotConnected"
                     reason:@"Messenger not connected. Call connect: before subscribing."
                     userInfo:nil];
         }
-        __weak NearbyService *weakSelf = self;
         // Create _subscription object
         _subscription = [[self sharedMessageManager] subscriptionWithMessageFoundHandler:^(GNSMessage *message) {
             // Send a local notification if not in the foreground.
@@ -181,7 +183,7 @@ static BLEScanner *myBLEScanner;
             }
             NSLog(@"MESSAGE_FOUND: %@", message);
             NSString *messageString = [[NSString alloc] initWithData:message.content encoding: NSUTF8StringEncoding];
-            [weakSelf createEvent: @"MESSAGE_FOUND" withMessage:messageString];
+            [myDBUtil createEvent: @"MESSAGE_FOUND" withMessage:messageString];
         } messageLostHandler:^(GNSMessage *message) {
             NSLog(@"MESSAGE_LOST: %@", message);
             // NSString *messageString = [[NSString alloc] initWithData:message.content encoding: NSUTF8StringEncoding];
@@ -191,11 +193,11 @@ static BLEScanner *myBLEScanner;
                 params.allowInBackground = YES;
             }];
         }];
-        [self createEvent: @"SUBSCRIBE_SUCCESS" withMessage:@""];
+        [myDBUtil createEvent: @"SUBSCRIBE_SUCCESS" withMessage:@""];
         NSLog(@"Successfully Subscribed.");
     } @catch(NSException *exception) {
         if(exception.reason != nil) {
-            [self createEvent: @"SUBSCRIBE_FAILED" withMessage:exception.reason];
+            [myDBUtil createEvent: @"SUBSCRIBE_FAILED" withMessage:exception.reason];
             NSLog(@"SUBSCRIBE_FAILED: %@", exception.reason);
         }
     }
@@ -236,35 +238,8 @@ static BLEScanner *myBLEScanner;
     }
 }
 
-- (void) createEvent:(nonnull NSString*)eventType withMessage:(nonnull NSString*) message {
-    NSLog(@"-----> createEvent: eventType=%@ message=%@", eventType, message);
-    NSTimeInterval timeStamp = [[NSDate date] timeIntervalSince1970];
-    NSNumber *timeStampObj = [NSNumber numberWithDouble: timeStamp];
-    NSString *formattedDate = [self getFormattedDate];
-    NSDictionary *dict = @{
-        @"eventType": eventType,
-        @"message": message,
-        @"formatDate": formattedDate,
-        @"timestamp": timeStampObj
-    };
-    [myDBManager saveData: dict];
-}
-
-- (NSString *) getFormattedDate {
-    NSDateFormatter *dateFormatter=[[NSDateFormatter alloc] init];
-    [dateFormatter setDateFormat:@"HH:mm:ss:SS"];
-    NSString *formattedDate = [dateFormatter stringFromDate:[NSDate date]];
-    return formattedDate;
-}
-
-- (NSMutableArray *) getEvents {
-    NSMutableArray *newEvents = [NSMutableArray arrayWithArray:events];
-    [events removeAllObjects];
-    return newEvents;
-}
-
 - (void) deleteAllData {
-    [myDBManager deleteAllData];
+    [myDBUtil deleteAllData];
 }
 
 @end

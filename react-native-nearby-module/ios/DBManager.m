@@ -41,7 +41,7 @@ static sqlite3 *sqlite3Database;
         NSLog(@"Database already exists at filePath: %@", self.databasePath);
     }
 }
-    
+
 
 - (void) saveData: (NSDictionary *) event {
     const char *dbPath = [self.databasePath UTF8String];

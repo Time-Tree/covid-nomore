@@ -7,8 +7,8 @@ pre_install do |installer|
     if pod.name.eql?('RNPermissions') || pod.name.start_with?('Permission-')
       def pod.build_type;
         # Uncomment one line depending on your CocoaPods version
-        # Pod::BuildType.static_library # >= 1.9
-        Pod::Target::BuildType.static_library # < 1.9
+        Pod::BuildType.static_library # >= 1.9
+        # Pod::Target::BuildType.static_library # < 1.9
       end
     end
   end

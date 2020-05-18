@@ -21,13 +21,6 @@ RCT_EXPORT_METHOD(startService: (nonnull NSString *)apiKey) {
     [nearbyService startService:apiKey];
 }
 
-RCT_REMAP_METHOD(getEvents,
-                 getEventsWithResolver:(RCTPromiseResolveBlock)resolve
-                 getEventsRejecter:(RCTPromiseRejectBlock)reject) {
-    NSMutableArray *events = [nearbyService getEvents];
-    resolve(events);
-}
-
 RCT_REMAP_METHOD(getStatus,
                  getStatusWithResolver:(RCTPromiseResolveBlock)resolve
                  getStatusRejecter:(RCTPromiseRejectBlock)reject) {
