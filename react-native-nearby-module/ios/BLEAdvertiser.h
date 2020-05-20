@@ -1,10 +1,10 @@
 #import <CoreBluetooth/CoreBluetooth.h>
 
-@interface BLEEmitter : NSObject
+@interface BLEAdvertiser : NSObject
 
 @property (nonatomic, strong) CBPeripheralManager *peripheralManager;
 
-- (void) startAdvertising: (NSString *)serviceUUID;
+- (void) startAdvertising;
 - (void) stopAdvertising;
 
 @end

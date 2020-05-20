@@ -1,15 +1,17 @@
-#import "BLEEmitter.h"
+#import "BLEAdvertiser.h"
 #import "DBUtil.h"
 
 static DBUtil *myDBUtil;
-CBUUID *myUUID;
+static CBUUID *myUUID;
+static NSString * const UUID = @"a9ecdb59-974e-43f0-9d93-27d5dcb060d6";
 
-@implementation BLEEmitter
+@implementation BLEAdvertiser
 
 - (instancetype) init {
     self = [super init];
     self.peripheralManager = [[CBPeripheralManager alloc] initWithDelegate:self queue:nil options:@{CBPeripheralManagerOptionShowPowerAlertKey: @NO}];
     myDBUtil = [[DBUtil alloc] init];
+    myUUID = [CBUUID UUIDWithString:UUID];
     return self;
 }
 
@@ -37,7 +39,7 @@ CBUUID *myUUID;
     NSLog(@"CBManagerState: %@", string);
 }
 
-- (void) startAdvertising: (NSString *)serviceUUID {
+- (void) startAdvertising {
     [self stopAdvertising];
     
     CBManagerState state = [self.peripheralManager state];
@@ -51,7 +53,6 @@ CBUUID *myUUID;
         NSLog(@"Already advertising");
         return;
     }
-    myUUID = [CBUUID UUIDWithString:serviceUUID];
     CBMutableService *service = [[CBMutableService alloc] initWithType:myUUID primary:YES];
     [self.peripheralManager addService:service];
 }
