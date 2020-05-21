@@ -6,5 +6,6 @@
 
 - (void) scan;
 - (void) stopScan;
+- (void)peripheral:(CBPeripheral *)peripheral didDiscoverServices:(NSError *)error;
 
 @end

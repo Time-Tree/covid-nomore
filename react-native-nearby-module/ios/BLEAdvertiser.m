@@ -2,8 +2,8 @@
 #import "DBUtil.h"
 
 static DBUtil *myDBUtil;
-static CBUUID *myUUID;
-static NSString * const UUID = @"a9ecdb59-974e-43f0-9d93-27d5dcb060d6";
+static NSString * const appIdentifier = @"a9ecdb59-974e-43f0-9d93-27d5dcb060d6";
+static NSString *uniqueIdentifier;
 
 @implementation BLEAdvertiser
 
@@ -11,7 +11,7 @@ static NSString * const UUID = @"a9ecdb59-974e-43f0-9d93-27d5dcb060d6";
     self = [super init];
     self.peripheralManager = [[CBPeripheralManager alloc] initWithDelegate:self queue:nil options:@{CBPeripheralManagerOptionShowPowerAlertKey: @NO}];
     myDBUtil = [[DBUtil alloc] init];
-    myUUID = [CBUUID UUIDWithString:UUID];
+    uniqueIdentifier = [[[UIDevice currentDevice] identifierForVendor] UUIDString];
     return self;
 }
 
@@ -53,7 +53,13 @@ static NSString * const UUID = @"a9ecdb59-974e-43f0-9d93-27d5dcb060d6";
         NSLog(@"Already advertising");
         return;
     }
-    CBMutableService *service = [[CBMutableService alloc] initWithType:myUUID primary:YES];
+    CBMutableCharacteristic *characteristic = [[CBMutableCharacteristic alloc] initWithType:[CBUUID UUIDWithString:uniqueIdentifier]
+                                                                                 properties:CBCharacteristicPropertyRead
+                                                                                      value:nil
+                                                                                permissions:CBAttributePermissionsReadable];
+
+    CBMutableService *service = [[CBMutableService alloc] initWithType:[CBUUID UUIDWithString:appIdentifier] primary:YES];
+    [service setCharacteristics:@[characteristic]];
     [self.peripheralManager addService:service];
 }
 
@@ -66,7 +72,7 @@ static NSString * const UUID = @"a9ecdb59-974e-43f0-9d93-27d5dcb060d6";
         NSString *deviceName = [[UIDevice currentDevice] name];
         [self.peripheralManager startAdvertising:@{
             CBAdvertisementDataLocalNameKey: deviceName,
-            CBAdvertisementDataServiceUUIDsKey: @[myUUID]
+            CBAdvertisementDataServiceUUIDsKey: @[[CBUUID UUIDWithString:appIdentifier]]
         }];
     }
 }
@@ -78,7 +84,7 @@ static NSString * const UUID = @"a9ecdb59-974e-43f0-9d93-27d5dcb060d6";
         [myDBUtil createEvent: @"Error advertising" withMessage:[error localizedDescription]];
     } else {
         NSLog(@"Start advertising success");
-        NSString *message = [NSString stringWithFormat: @"UUID: %@", myUUID];
+        NSString *message = [NSString stringWithFormat: @"UUID: %@", uniqueIdentifier];
         [myDBUtil createEvent: @"Start advertising success" withMessage:message];
     }
 }

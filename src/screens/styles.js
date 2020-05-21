@@ -61,5 +61,9 @@ export const styles = StyleSheet.create({
   },
   eventMessage: {
     color: 'gray'
+  },
+  handshakeType: {
+    color: 'darkblue',
+    fontWeight: 'bold'
   }
 });

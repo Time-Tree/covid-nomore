@@ -49,8 +49,12 @@ class NearbyAPI {
               message: event.message,
               timestamp: event.timestamp
             });
-            if (event.eventType === 'MESSAGE_FOUND') {
+            if (
+              event.eventType === 'MESSAGE_FOUND' ||
+              event.eventType === 'BLE_FOUND'
+            ) {
               handshakes.push({
+                type: event.eventType,
                 time: parseInt(event.timestamp, 10),
                 formated: event.formatDate,
                 target: event.message.split('-')[0]

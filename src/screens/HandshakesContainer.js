@@ -45,7 +45,8 @@ class HandshakesContainer extends React.Component {
     <View style={styles.tile} key={item.key}>
       <View style={styles.tileHeader}>
         <Text>
-          {item.target} @ {item.formated}
+          <Text style={styles.handshakeType}>{item.type}:</Text> {item.target} @{' '}
+          {item.formated}
         </Text>
         <TouchableOpacity onPress={this.removeHandler(item.time)}>
           <Icon name="delete-outline" size={25} color="red" />

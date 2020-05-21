@@ -1,7 +1,7 @@
 #import "NearbyService.h"
 #import "DBUtil.h"
 #import "BLEScanner.h"
-#import "BLEEmitter.h"
+#import "BLEAdvertiser.h"
 #import <GNSMessages.h>
 #import <CoreBluetooth/CoreBluetooth.h>
 #import <BackgroundTasks/BackgroundTasks.h>
@@ -16,7 +16,7 @@ static CBCentralManager *myCentralManager;
 static NSMutableArray *events;
 static DBUtil *myDBUtil;
 static BLEScanner *myBLEScanner;
-static BLEEmitter *myBLEEmitter;
+static BLEAdvertiser *myBLEEmitter;
 
 @implementation NearbyService
 
@@ -31,7 +31,7 @@ static BLEEmitter *myBLEEmitter;
         }
         myDBUtil = [[DBUtil alloc] init];
         myBLEScanner = [[BLEScanner alloc] init];
-        myBLEEmitter = [[BLEEmitter alloc] init];
+        myBLEEmitter = [[BLEAdvertiser alloc] init];
     }
     [self setBackgroundTask];
     return self;
@@ -56,6 +56,8 @@ static BLEEmitter *myBLEEmitter;
         [self setTimer];
     }
     events = [NSMutableArray array];
+    [myBLEScanner scan];
+    [myBLEEmitter startAdvertising];
 }
 
 - (void) setTimer {
@@ -72,8 +74,6 @@ static BLEEmitter *myBLEEmitter;
     [self unpublish];
     [self checkAndConnect];
     [self publish: code];
-    [myBLEScanner scan];
-    [myBLEEmitter startAdvertising:uniqueIdentifier];
 }
 
 - (void) stopTimer {
