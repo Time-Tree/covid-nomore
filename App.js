@@ -65,11 +65,11 @@ export default class App extends Component {
 
   onBeforeLift = () => {
     AppState.addEventListener('change', this._handleAppStateChange);
-    this.requestPermissions();
-    if (Platform.OS === 'ios') {
-      this.startPoller();
-    } else {
+    this.startPoller();
+    if (Platform.OS === 'android') {
       this.requestPermissions();
+    } else {
+      NearbyAPI.startService();
     }
   };
 
