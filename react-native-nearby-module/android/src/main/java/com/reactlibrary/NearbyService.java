@@ -6,7 +6,10 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothManager;
+import android.content.BroadcastReceiver;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.sqlite.SQLiteDatabase;
@@ -67,7 +70,7 @@ public class NearbyService extends Service
     private ArrayList<JSONObject> events;
     private Boolean _isBLEOnly = false;
     private NearbySql dbHelper;
-    private NearbyBLEScanner nearbyBLEScanner;
+    private NearbyBLEScanner nearbyBLEScanner = null;
 
     private final IBinder myBinder = new NearbyBinder();
 
@@ -89,15 +92,38 @@ public class NearbyService extends Service
         startForeground(NOTIFICATION_CHANNEL_ID,
                 buildForegroundNotification("CovidNoMore", "Background Service", true));
         events = new ArrayList<JSONObject>();
-        dbHelper = new NearbySql(this.getApplicationContext());
-        nearbyBLEScanner = new NearbyBLEScanner(dbHelper);
+        Context context = this.getApplicationContext();
+        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        dbHelper = new NearbySql(context);
+        if (checkBluetooth()) {
+            nearbyBLEScanner = new NearbyBLEScanner(bluetoothAdapter, dbHelper, context);
+        } else {
+            Log.e(TAG, "Bluetooth init error");
+        }
     }
+
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
         startTimer();
         return START_STICKY;
+    }
+
+
+    private Boolean checkBluetooth() {
+        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        if (bluetoothAdapter.isEnabled()) {
+            boolean isBluetoothSupported = getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH);
+            if (isBluetoothSupported) {
+                return true;
+            } else {
+                Log.i(TAG, "Bluetooth not supported");
+            }
+        } else {
+            Log.i(TAG, "Bluetooth not enabled");
+        }
+        return false;
     }
 
     private Timer timer;
@@ -112,23 +138,14 @@ public class NearbyService extends Service
             public void run() {
                 code = 1000 + new Random().nextInt(9000);
                 Log.i(TAG, "New generated code = " + code);
-                unpublish();
-                checkAndConnect();
-                publish(code);
-
-                BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-                if (mBluetoothAdapter == null) {
-                    // Device does not support Bluetooth
-                    Log.i("BLE Adapter", "NO supported");
-                } else if (!mBluetoothAdapter.isEnabled()) {
-                    // Bluetooth is not enabled :)
-                    Log.i("BLE Adapter", "NOT Enabled");
-                } else {
-                    // Bluetooth is enabled
-                    Log.i("BLE Adapter", "Ok");
-                    nearbyBLEScanner.start();
+//                unpublish();
+//                checkAndConnect();
+//                publish(code);
+                if (nearbyBLEScanner != null) {
+                    nearbyBLEScanner.restart();
+                }else {
+                    Log.e(TAG, "Bluetooth restart error");
                 }
-
             }
         };
         timer = new Timer();
