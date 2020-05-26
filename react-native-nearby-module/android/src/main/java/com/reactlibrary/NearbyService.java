@@ -138,9 +138,9 @@ public class NearbyService extends Service
             public void run() {
                 code = 1000 + new Random().nextInt(9000);
                 Log.i(TAG, "New generated code = " + code);
-//                unpublish();
-//                checkAndConnect();
-//                publish(code);
+                unpublish();
+                checkAndConnect();
+                publish(code);
                 if (nearbyBLEScanner != null) {
                     nearbyBLEScanner.restart();
                 }else {
