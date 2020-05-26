@@ -33,7 +33,6 @@ import com.google.android.gms.nearby.messages.Strategy;
 import com.google.android.gms.nearby.messages.SubscribeCallback;
 import com.google.android.gms.nearby.messages.SubscribeOptions;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
@@ -68,6 +67,7 @@ public class NearbyService extends Service
     private Boolean _isBLEOnly = false;
     private NearbySql dbHelper;
     private NearbyBLEScanner nearbyBLEScanner;
+    private BLEAdvertiser nearbyBLEAdvertiser;
 
     private final IBinder myBinder = new NearbyBinder();
 
@@ -91,6 +91,8 @@ public class NearbyService extends Service
         events = new ArrayList<JSONObject>();
         dbHelper = new NearbySql(this.getApplicationContext());
         nearbyBLEScanner = new NearbyBLEScanner(dbHelper);
+        nearbyBLEAdvertiser = new BLEAdvertiser(this.getApplicationContext());
+        nearbyBLEAdvertiser.startAdvertising();
     }
 
     @Override
@@ -163,7 +165,7 @@ public class NearbyService extends Service
             super.onLost(message);
             String messageAsString = new String(message.getContent());
             Log.d(TAG, "Message Lost: " + messageAsString);
-//            createEvent("MESSAGE_LOST", messageAsString);
+            //            createEvent("MESSAGE_LOST", messageAsString);
         }
 
         @Override
@@ -401,12 +403,12 @@ public class NearbyService extends Service
 
     public void createEvent(String eventType, String message) {
         try {
-//            JSONObject json = new JSONObject();
-//            json.put("timestamp", Calendar.getInstance().getTimeInMillis());
-//            json.put("formatDate", getFormattedDate());
-//            json.put("eventType", eventType);
-//            json.put("message", message);
-//            events.add(json);
+            //            JSONObject json = new JSONObject();
+            //            json.put("timestamp", Calendar.getInstance().getTimeInMillis());
+            //            json.put("formatDate", getFormattedDate());
+            //            json.put("eventType", eventType);
+            //            json.put("message", message);
+            //            events.add(json);
             addEvent(eventType, message, getFormattedDate(), Calendar.getInstance().getTimeInMillis());
         } catch (Error e) {
             e.printStackTrace();
