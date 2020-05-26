@@ -50,7 +50,7 @@ export default class App extends Component {
     console.log('_handleAppStateChange', nextAppState);
     if (nextAppState === 'active' && !this._interval) {
       this.startPoller();
-    } else if (this._interval) {
+    } else if (nextAppState !== 'active' && this._interval) {
       clearInterval(this._interval);
       this._interval = null;
     }
