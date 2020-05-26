@@ -50,7 +50,7 @@ export default class App extends Component {
     console.log('_handleAppStateChange', nextAppState);
     if (nextAppState === 'active' && !this._interval) {
       this.startPoller();
-    } else if (this._interval) {
+    } else if (nextAppState !== 'active' && this._interval) {
       clearInterval(this._interval);
       this._interval = null;
     }
@@ -65,11 +65,11 @@ export default class App extends Component {
 
   onBeforeLift = () => {
     AppState.addEventListener('change', this._handleAppStateChange);
-    this.requestPermissions();
-    if (Platform.OS === 'ios') {
-      this.startPoller();
-    } else {
+    this.startPoller();
+    if (Platform.OS === 'android') {
       this.requestPermissions();
+    } else {
+      NearbyAPI.startService();
     }
   };
 

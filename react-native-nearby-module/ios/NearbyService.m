@@ -7,16 +7,16 @@
 #import <BackgroundTasks/BackgroundTasks.h>
 #include <stdlib.h>
 
-/// The main message manager to handle connection, publications, and subscriptions.
-static GNSMessageManager *_messageManager = nil;
-static NSString *_apiKey = nil;
+
+static GNSMessageManager *_messageManager;
+static NSString *_apiKey;
 static NSString *uniqueIdentifier;
 static int code;
 static CBCentralManager *myCentralManager;
 static NSMutableArray *events;
 static DBUtil *myDBUtil;
 static BLEScanner *myBLEScanner;
-static BLEAdvertiser *myBLEEmitter;
+static BLEAdvertiser *myBLEAdvertiser;
 
 @implementation NearbyService
 
@@ -31,7 +31,7 @@ static BLEAdvertiser *myBLEEmitter;
         }
         myDBUtil = [[DBUtil alloc] init];
         myBLEScanner = [[BLEScanner alloc] init];
-        myBLEEmitter = [[BLEAdvertiser alloc] init];
+        myBLEAdvertiser = [[BLEAdvertiser alloc] init];
     }
     [self setBackgroundTask];
     return self;
@@ -57,7 +57,7 @@ static BLEAdvertiser *myBLEEmitter;
     }
     events = [NSMutableArray array];
     [myBLEScanner scan];
-    [myBLEEmitter startAdvertising];
+    [myBLEAdvertiser startAdvertising];
 }
 
 - (void) setTimer {

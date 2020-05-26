@@ -8,6 +8,8 @@ import settingsActions from '../redux/settings/actions';
 import keys from '../../keys';
 
 class NearbyAPI {
+  lock = false;
+
   startService() {
     NearbyModule.startService(keys.NEARBY_KEY);
   }
@@ -19,6 +21,8 @@ class NearbyAPI {
 
   getEvents = async () => {
     try {
+      if (this.lock) return;
+      this.lock = true;
       let { sync } = store.getState().events;
 
       SQLite.enablePromise(true);
@@ -73,8 +77,11 @@ class NearbyAPI {
           `DELETE FROM NearbyEvents WHERE timestamp <= ${lastSync}`
         );
       }
-      db.close();
-    } catch (error) {}
+      await db.close();
+      this.lock = false;
+    } catch (error) {
+      this.lock = false;
+    }
   };
 
   getStatus = async () => {

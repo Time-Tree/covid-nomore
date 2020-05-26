@@ -5,7 +5,8 @@ import {
   FlatList,
   Button,
   ActivityIndicator,
-  TouchableOpacity
+  TouchableOpacity,
+  Platform
 } from 'react-native';
 import GetLocation from 'react-native-get-location';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -124,6 +125,12 @@ class HandshakesContainer extends React.Component {
     return `${time.getDate()}/${time.getMonth()}/${time.getFullYear()}  ${time.getHours()}:${time.getMinutes()}:${time.getSeconds()}.${time.getMilliseconds()}`;
   };
 
+  getUUID = () => {
+    const id = DeviceInfo.getUniqueId();
+    if (Platform.OS === 'ios') return id;
+    return `${id.substring(0, 8)}-${id.substring(8, 12)}-${id.substring(12)}`;
+  };
+
   render() {
     const { lastUpdated, handshakes } = this.props;
     const { pending } = this.state;
@@ -133,7 +140,7 @@ class HandshakesContainer extends React.Component {
         <View style={styles.headerContainer}>
           <Text>
             My device UUID:
-            <Text style={styles.publishCode}> {DeviceInfo.getUniqueId()}</Text>
+            <Text style={styles.publishCode}> {this.getUUID()}</Text>
           </Text>
           <Button title="Clear" onPress={this.props.clearHandshakeAction} />
         </View>

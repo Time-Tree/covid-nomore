@@ -64,15 +64,13 @@ static CBPeripheral * discoveredPeripheral;
 
 - (void)centralManager:(CBCentralManager *)central didDiscoverPeripheral:(CBPeripheral *)peripheral
       advertisementData:(NSDictionary *)advertisementData RSSI:(NSNumber *)RSSI {
-    if (peripheral.name) {
-        long newDate =[[NSDate date] timeIntervalSince1970];
-        long newTimestamp = newDate / 10 * 10;
-        long trimTime = timestamp / 10 * 10;
-        if (newTimestamp != trimTime) {
-            timestamp = [[NSDate date] timeIntervalSince1970];
-            discoveredPeripheral = peripheral;
-            [central connectPeripheral:peripheral options:nil];
-        }
+    long newDate =[[NSDate date] timeIntervalSince1970];
+    long newTimestamp = newDate / 10 * 10;
+    long trimTime = timestamp / 10 * 10;
+    if (newTimestamp != trimTime) {
+        timestamp = [[NSDate date] timeIntervalSince1970];
+        discoveredPeripheral = peripheral;
+        [central connectPeripheral:peripheral options:nil];
     }
 }
 
@@ -104,7 +102,12 @@ static CBPeripheral * discoveredPeripheral;
 - (void)peripheral:(CBPeripheral *)peripheral didDiscoverCharacteristicsForService:(CBService *)service error:(NSError *)error {
     for (CBCharacteristic *characteristic in service.characteristics) {
         NSLog(@"Discovered characteristic %@", characteristic);
-        NSString *messageString = [NSString stringWithFormat: @"NM: %@, ID: %@", peripheral.name, characteristic.UUID];
+        NSString *uuid = [NSString stringWithFormat: @"%@", characteristic.UUID];
+        NSString *substr = [uuid substringFromIndex:18];
+        if([substr isEqual: @"-0000-000000000000"]) {
+            uuid = [uuid substringToIndex:18];
+        }
+        NSString *messageString = [NSString stringWithFormat: @"NM: %@, ID: %@", peripheral.name, uuid];
         [myDBUtil createEvent: @"BLE_FOUND" withMessage:messageString];
     }
 }
