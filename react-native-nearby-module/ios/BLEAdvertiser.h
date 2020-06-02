@@ -6,5 +6,6 @@
 
 - (void) startAdvertising;
 - (void) stopAdvertising;
+- (void) restartAdvertising;
 
 @end

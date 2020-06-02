@@ -6,8 +6,6 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothManager;
-import android.content.BroadcastReceiver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -97,11 +95,10 @@ public class NearbyService extends Service
         dbHelper = new NearbySql(context);
         if (checkBluetooth()) {
             nearbyBLEScanner = new NearbyBLEScanner(bluetoothAdapter, dbHelper, context);
+            nearbyBLEAdvertiser = new BLEAdvertiser(dbHelper, context);
         } else {
             Log.e(TAG, "Bluetooth init error");
         }
-        nearbyBLEAdvertiser = new BLEAdvertiser(this.getApplicationContext());
-        nearbyBLEAdvertiser.startAdvertising();
     }
 
     @Override
@@ -141,6 +138,9 @@ public class NearbyService extends Service
                 unpublish();
                 checkAndConnect();
                 publish(code);
+                if (nearbyBLEAdvertiser != null) {
+                    nearbyBLEAdvertiser.startAdvertising();
+                }
                 if (nearbyBLEScanner != null) {
                     nearbyBLEScanner.restart();
                 } else {
@@ -149,7 +149,7 @@ public class NearbyService extends Service
             }
         };
         timer = new Timer();
-        timer.schedule(timerTask, 1000, 30000);
+        timer.schedule(timerTask, 1000, 60000);
     }
 
     public void stoptimertask() {
@@ -172,7 +172,7 @@ public class NearbyService extends Service
             super.onFound(message);
             String messageAsString = new String(message.getContent());
             Log.d(TAG, "Message Found: " + messageAsString);
-            createEvent("MESSAGE_FOUND", messageAsString);
+            createEvent("NEARBY_FOUND", messageAsString);
         }
 
         @Override
@@ -180,7 +180,7 @@ public class NearbyService extends Service
             super.onLost(message);
             String messageAsString = new String(message.getContent());
             Log.d(TAG, "Message Lost: " + messageAsString);
-            // createEvent("MESSAGE_LOST", messageAsString);
+            // createEvent("NEARBY_LOST", messageAsString);
         }
 
         @Override
@@ -258,19 +258,19 @@ public class NearbyService extends Service
 
     public void connect(boolean bleOnly) {
         if (!isMinimumAndroidVersion()) {
-            createEvent("CONNECTION_FAILED",
+            createEvent("NEARBY_ERROR",
                     "Current Android version is too low: " + Integer.toString(Build.VERSION.SDK_INT));
             return;
         }
         if (!isGooglePlayServicesAvailable(true)) {
-            createEvent("CONNECTION_FAILED", "Google Play Services is not available on this device.");
+            createEvent("NEARBY_ERROR", "Google Play Services is not available on this device.");
             return;
         }
         _isBLEOnly = bleOnly;
         GoogleApiClient client = getGoogleAPIInstance();
         if (client.isConnected()) {
             Log.w(TAG, "Google API Client is already connected.");
-            createEvent("CONNECTED", "Already connected.");
+            createEvent("NEARBY_CONNECTED", "Already connected.");
             return;
         }
         client.connect();
@@ -280,7 +280,7 @@ public class NearbyService extends Service
         GoogleApiClient client = getGoogleAPIInstance();
         client.disconnect();
         Log.d(TAG, "Google API Client disconnected.");
-        createEvent("DISCONNECTED", "Google API Client is disconnected.");
+        createEvent("NEARBY_DISCONNECTED", "Google API Client is disconnected.");
     }
 
     public boolean isConnected() {
@@ -366,7 +366,7 @@ public class NearbyService extends Service
                     });
         } else {
             Log.e(TAG, "Google API Client not connected. Call " + TAG + ".connect() before subscribing.");
-            createEvent("CONNECTION_FAILED", "Google API Client not connected. Call .connect() before subscribing.");
+            createEvent("NEARBY_ERROR", "Google API Client not connected. Call .connect() before subscribing.");
         }
     }
 
@@ -382,7 +382,7 @@ public class NearbyService extends Service
     public void onConnected(Bundle bundle) {
         if (getGoogleAPIInstance().isConnected()) {
             Log.d(TAG, "Google API Client connected.");
-            createEvent("CONNECTED", "Google API connected.");
+            createEvent("NEARBY_CONNECTED", "Google API connected.");
             this.subscribe();
         } else {
             Log.e(TAG, "Google API Client not connected.");
@@ -397,8 +397,9 @@ public class NearbyService extends Service
 
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
-        Log.e(TAG, "CONNECTION_FAILED " + connectionResult.toString());
-        createEvent("CONNECTION_FAILED", "Google Client connection failed: " + connectionResult.getErrorMessage());
+        Log.e(TAG, "NEARBY_ERROR " + connectionResult.toString());
+        createEvent("NEARBY_ERROR", "Google Client connection failed: " + connectionResult.getErrorMessage());
+        Log.e(TAG, "connectionResult.hasResolution() = " + connectionResult.hasResolution());
         if (connectionResult.hasResolution()) {
             try {
                 PendingIntent pi = connectionResult.getResolution();

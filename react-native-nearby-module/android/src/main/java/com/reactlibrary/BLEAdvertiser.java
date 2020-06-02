@@ -12,14 +12,19 @@ import android.bluetooth.le.AdvertiseCallback;
 import android.bluetooth.le.AdvertiseData;
 import android.bluetooth.le.AdvertiseSettings;
 import android.bluetooth.le.BluetoothLeAdvertiser;
+import android.content.ContentValues;
 import android.content.Context;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Build;
 import android.os.ParcelUuid;
+import android.provider.Settings.Secure;
 import android.util.Base64;
 import android.util.Log;
-import android.provider.Settings.Secure;
 
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.UUID;
 
 import androidx.annotation.RequiresApi;
@@ -31,14 +36,16 @@ public class BLEAdvertiser {
     private BluetoothGattServer mGattServer;
     private BluetoothLeAdvertiser advertiser;
     private AdvertiseCallback advertisingCallback;
+    private NearbySql dbHelper;
     private boolean advertising;
     private Context context;
     private final String appIdentifier = "a9ecdb59-974e-43f0-9d93-27d5dcb060d6";
     private String uniqueIdentifier;
 
-    public BLEAdvertiser(Context context) {
+    public BLEAdvertiser(NearbySql dbHelper, Context context) {
         super();
         this.context = context;
+        this.dbHelper = dbHelper;
         this.advertising = false;
         this.uniqueIdentifier = Secure.getString(context.getContentResolver(), Secure.ANDROID_ID);
     }
@@ -61,7 +68,7 @@ public class BLEAdvertiser {
 
         @Override
         public void onCharacteristicReadRequest(BluetoothDevice device, int requestId, int offset,
-                                                BluetoothGattCharacteristic characteristic) {
+                BluetoothGattCharacteristic characteristic) {
             super.onCharacteristicReadRequest(device, requestId, offset, characteristic);
             Log.w("BLEAdvertiser", "Device tried to read characteristic: " + characteristic.getUuid());
             Log.w("BLEAdvertiser", "Value: " + Arrays.toString(characteristic.getValue()));
@@ -82,8 +89,8 @@ public class BLEAdvertiser {
 
         @Override
         public void onCharacteristicWriteRequest(BluetoothDevice device, int requestId,
-                                                 BluetoothGattCharacteristic characteristic, boolean preparedWrite, boolean responseNeeded, int offset,
-                                                 byte[] value) {
+                BluetoothGattCharacteristic characteristic, boolean preparedWrite, boolean responseNeeded, int offset,
+                byte[] value) {
             super.onCharacteristicWriteRequest(device, requestId, characteristic, preparedWrite, responseNeeded, offset,
                     value);
             String message = Base64.encodeToString(value, Base64.DEFAULT);
@@ -97,24 +104,26 @@ public class BLEAdvertiser {
     };
 
     private String convertIdToUUID(String id) {
-        return id.substring(0,8) + '-' + id.substring(8,12) + '-' + id.substring(12) + "-0000-000000000000";
+        return id.substring(0, 8) + '-' + id.substring(8, 12) + '-' + id.substring(12) + "-0000-000000000000";
     }
 
     private boolean addService() {
         Log.w("BLEAdvertiser", "BlePeripheral addService: " + this.appIdentifier);
         UUID SERVICE_UUID = UUID.fromString(this.appIdentifier);
-        BluetoothGattService mGattService = new BluetoothGattService(SERVICE_UUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);
+        BluetoothGattService mGattService = new BluetoothGattService(SERVICE_UUID,
+                BluetoothGattService.SERVICE_TYPE_PRIMARY);
         String characteristicId = this.convertIdToUUID(this.uniqueIdentifier);
         UUID CHARACTERISTIC_UUID = UUID.fromString(characteristicId);
 
-        BluetoothGattCharacteristic mGattCharacteristic = new BluetoothGattCharacteristic(CHARACTERISTIC_UUID, BluetoothGattCharacteristic.PROPERTY_READ, BluetoothGattCharacteristic.PERMISSION_READ);
+        BluetoothGattCharacteristic mGattCharacteristic = new BluetoothGattCharacteristic(CHARACTERISTIC_UUID,
+                BluetoothGattCharacteristic.PROPERTY_READ, BluetoothGattCharacteristic.PERMISSION_READ);
         mGattService.addCharacteristic(mGattCharacteristic);
 
         return mGattServer.addService(mGattService);
     }
 
     public void startAdvertising() {
-        Log.e("BLEAdvertiser", "startAdvertising" );
+        Log.e("BLEAdvertiser", "startAdvertising");
         this.stopAdvertising();
 
         mBluetoothManager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
@@ -122,14 +131,18 @@ public class BLEAdvertiser {
 
         if (mBluetoothAdapter == null) {
             Log.e("BLEAdvertiser", "BLUETOOTH_UNAVAILABLE: Bluetooth is not available.");
+            addEvent("BLE_ADVERTISER_ERROR", "Start advertising failed: Bluetooth is not available.");
             return;
         }
         if (!mBluetoothAdapter.isEnabled()) {
             Log.e("BLEAdvertiser", "BLUETOOTH_DISABLED: Bluetooth is disabled.");
+            addEvent("BLE_ADVERTISER_ERROR", "Start advertising failed: Bluetooth is disabled.");
             return;
         }
         if (!mBluetoothAdapter.isMultipleAdvertisementSupported()) {
             Log.e("BLEAdvertiser", "BLE_UNSUPPORTED: Bluetooth LE Advertising not supported on this device.");
+            addEvent("BLE_ADVERTISER_ERROR",
+                    "Start advertising failed: Bluetooth LE Advertising not supported on this device.");
             return;
         }
 
@@ -143,15 +156,11 @@ public class BLEAdvertiser {
                 Log.e("BLEAdvertiser", "add service failed");
             } else {
                 AdvertiseSettings settings = new AdvertiseSettings.Builder()
-                        .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
-                        .setConnectable(true)
-                        .setTimeout(0).setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_MEDIUM)
-                        .build();
+                        .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY).setConnectable(true)
+                        .setTimeout(0).setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_MEDIUM).build();
 
-                AdvertiseData data = new AdvertiseData.Builder()
-                        .setIncludeDeviceName(false)
-                        .addServiceUuid(new ParcelUuid(UUID.fromString(this.appIdentifier)))
-                        .build();
+                AdvertiseData data = new AdvertiseData.Builder().setIncludeDeviceName(false)
+                        .addServiceUuid(new ParcelUuid(UUID.fromString(this.appIdentifier))).build();
 
                 advertisingCallback = new AdvertiseCallback() {
                     @Override
@@ -169,6 +178,8 @@ public class BLEAdvertiser {
                     }
                 };
                 advertiser.startAdvertising(settings, data, advertisingCallback);
+                ;
+                addEvent("BLE_ADVERTISER", "Start advertising success with UUID: " + this.uniqueIdentifier);
             }
         }
     }
@@ -184,6 +195,32 @@ public class BLEAdvertiser {
 
     public boolean isAdvertising() {
         return this.advertising;
+    }
+
+    private long addEvent(String eventType, String message) {
+        long newRowId = -1;
+        String formatDate = getFormattedDate();
+        Long timestamp = Calendar.getInstance().getTimeInMillis();
+        try {
+            SQLiteDatabase db = dbHelper.getWritableDatabase();
+            ContentValues values = new ContentValues();
+            values.put(NearbyEventContract.EventEntry.COLUMN_NAME_EVENT_TYPE, eventType);
+            values.put(NearbyEventContract.EventEntry.COLUMN_NAME_MESSAGE, message);
+            values.put(NearbyEventContract.EventEntry.COLUMN_NAME_FORMAT_DATE, formatDate);
+            values.put(NearbyEventContract.EventEntry.COLUMN_NAME_TIMESTAMP, timestamp);
+            newRowId = db.insert(NearbyEventContract.EventEntry.TABLE_NAME, null, values);
+            db.close();
+        } catch (Error e) {
+            e.printStackTrace();
+        }
+        return newRowId;
+    }
+
+    public String getFormattedDate() {
+        Date c = Calendar.getInstance().getTime();
+        SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss:SS");
+        String formattedDate = df.format(c);
+        return formattedDate;
     }
 
 }

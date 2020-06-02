@@ -27,7 +27,6 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 
@@ -44,7 +43,7 @@ public class NearbyBLEScanner {
     private NearbySql dbHelper;
     private Context context;
     private List<BluetoothGatt> gattConnections = new ArrayList<>();
-    private HashMap<String, Long>  deviceTimes = new HashMap<>();
+    private HashMap<String, Long> deviceTimes = new HashMap<>();
 
     public NearbyBLEScanner(final BluetoothAdapter bluetoothAdapter, NearbySql dbHelper, final Context context) {
         this.dbHelper = dbHelper;
@@ -59,15 +58,17 @@ public class NearbyBLEScanner {
         public void onScanResult(int callbackType, final ScanResult result) {
             ScanRecord record = result.getScanRecord();
             BluetoothDevice device = result.getDevice();
-            if (record == null || device == null) return;
-
+            if (record == null || device == null)
+                return;
 
             Long deviceTime = deviceTimes.get(device.getAddress());
-            if (deviceTime == null) deviceTime = 1L;
+            if (deviceTime == null)
+                deviceTime = 1L;
 
             long newTimestamp = Calendar.getInstance().getTimeInMillis() / 10000 * 10000;
             long trimTime = deviceTime / 10000 * 10000;
-            if (newTimestamp == trimTime) return;
+            if (newTimestamp == trimTime)
+                return;
 
             deviceTimes.put(device.getAddress(), Calendar.getInstance().getTimeInMillis());
 
@@ -79,60 +80,61 @@ public class NearbyBLEScanner {
         public void onScanFailed(int errorCode) {
             super.onScanFailed(errorCode);
             Log.i(TAG, "error");
+            addEvent("BLE_SCANNER_ERROR", String.valueOf(errorCode));
         }
     };
 
-    private final BluetoothGattCallback gattCallback =
-            new BluetoothGattCallback() {
+    private final BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
 
-                @Override
-                public void onConnectionStateChange(final BluetoothGatt gatt, final int status, final int newState) {
-                    if (status == GATT_SUCCESS) {
-                        if (newState == BluetoothProfile.STATE_CONNECTED) {
-                            gatt.discoverServices();
-                        } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                            gatt.close();
-                        } else {
-                            gatt.disconnect();
-                        }
-                    } else {
-                        gatt.close();
-                    }
-                }
-
-                @Override
-                public void onServicesDiscovered(BluetoothGatt gatt, int status) {
-                    if (status == GATT_SUCCESS) {
-                       BluetoothGattService service = gatt.getService(UUID.fromString("a9ecdb59-974e-43f0-9d93-27d5dcb060d6"));
-                       List<BluetoothGattCharacteristic> gattCharacteristics = service.getCharacteristics();
-                        for (BluetoothGattCharacteristic gattCharacteristic :
-                                gattCharacteristics) {
-                            if (gattCharacteristic.getUuid() != null) {
-                                Log.i(TAG, "BLE FOUND" + gattCharacteristic.getUuid().toString());
-                            }
-                        }
-
-                    }
+        @Override
+        public void onConnectionStateChange(final BluetoothGatt gatt, final int status, final int newState) {
+            if (status == GATT_SUCCESS) {
+                if (newState == BluetoothProfile.STATE_CONNECTED) {
+                    gatt.discoverServices();
+                } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                    gatt.close();
+                } else {
                     gatt.disconnect();
                 }
+            } else {
+                gatt.close();
+            }
+        }
 
-                @Override
-                public void onCharacteristicRead(BluetoothGatt gatt,
-                                                 BluetoothGattCharacteristic characteristic,
-                                                 int status) {
-                    if (status == GATT_SUCCESS) {
-                        Log.i(TAG, "BLE FOUND" + characteristic.getUuid().toString());
+        @Override
+        public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+            if (status == GATT_SUCCESS) {
+                BluetoothGattService service = gatt.getService(UUID.fromString("a9ecdb59-974e-43f0-9d93-27d5dcb060d6"));
+                List<BluetoothGattCharacteristic> gattCharacteristics = service.getCharacteristics();
+                for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
+                    if (gattCharacteristic.getUuid() != null) {
+                        String uuid = gattCharacteristic.getUuid().toString();
+                        if(uuid.substring(18) == "-0000-000000000000") {
+                            uuid = uuid.substring(0,18);
+                        }
+                        String message = "NM: " + gatt.getDevice().getName() + " ID: " + uuid;
+                        addEvent("BLE_FOUND", message);
+                        Log.i(TAG, "BLE FOUND" + uuid);
                     }
                 }
 
-            };
+            }
+            gatt.disconnect();
+        }
 
+        @Override
+        public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+            if (status == GATT_SUCCESS) {
+                Log.i(TAG, "BLE FOUND" + characteristic.getUuid().toString());
+            }
+        }
+
+    };
 
     public void start() {
         try {
             ScanSettings.Builder settingsBuilder = new ScanSettings.Builder()
-                    .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
-                    .setReportDelay(0);
+                    .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).setReportDelay(0);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 settingsBuilder.setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
                         .setNumOfMatches(ScanSettings.MATCH_NUM_MAX_ADVERTISEMENT)
@@ -142,18 +144,18 @@ public class NearbyBLEScanner {
                 settingsBuilder.setLegacy(true);
             }
             ScanFilter filter = new ScanFilter.Builder()
-                    .setServiceUuid(ParcelUuid.fromString("a9ecdb59-974e-43f0-9d93-27d5dcb060d6"))
-                    .build();
+                    .setServiceUuid(ParcelUuid.fromString("a9ecdb59-974e-43f0-9d93-27d5dcb060d6")).build();
             scanner.startScan(Collections.singletonList(filter), settingsBuilder.build(), scanCallback);
             isStarted = true;
             Log.i(TAG, "Scan started");
+            addEvent("BLE_SCANNER", "Scanning started");
         } catch (Exception e) {
+            addEvent("BLE_SCANNER_ERROR", "Start advertising failed: " + e.getMessage());
             Log.e(TAG, e.getMessage());
         }
     }
 
-    private void clearServicesCache()
-    {
+    private void clearServicesCache() {
         List<BluetoothGatt> toRemove = new ArrayList<>();
         for (BluetoothGatt gatt : gattConnections) {
             try {
@@ -189,8 +191,10 @@ public class NearbyBLEScanner {
         }
     }
 
-    private long addEvent(String eventType, String message, String formatDate, Long timestamp) {
+    private long addEvent(String eventType, String message) {
         long newRowId = -1;
+        String formatDate = getFormattedDate();
+        Long timestamp = Calendar.getInstance().getTimeInMillis();
         try {
             SQLiteDatabase db = dbHelper.getWritableDatabase();
             ContentValues values = new ContentValues();

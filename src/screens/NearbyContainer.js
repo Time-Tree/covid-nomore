@@ -15,10 +15,12 @@ class NearbyContainer extends React.Component {
 
   renderItem = ({ item }) => {
     let color = 'darkmagenta';
-    if (item.event === 'BLE SCAN') {
+    if (item.event === 'BLE_FOUND') {
       color = 'darkblue';
-    } else if (item.event === 'MESSAGE_FOUND') {
+    } else if (item.event === 'NEARBY_FOUND') {
       color = 'darkgreen';
+    } else if (item.event.indexOf('ERROR') > -1) {
+      color = 'darkred';
     }
     return (
       <View style={styles.eventContainer}>

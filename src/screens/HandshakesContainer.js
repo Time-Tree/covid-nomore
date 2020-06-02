@@ -43,7 +43,13 @@ class HandshakesContainer extends React.Component {
   };
 
   renderItem = ({ item }) => (
-    <View style={styles.tile} key={item.key}>
+    <View
+      style={[
+        styles.tile,
+        item.type === 'BLE' && { backgroundColor: '#dddbff' }
+      ]}
+      key={item.key}
+    >
       <View style={styles.tileHeader}>
         <Text>
           <Text style={styles.handshakeType}>{item.type}:</Text> {item.target} @{' '}

@@ -56,13 +56,11 @@ static BLEAdvertiser *myBLEAdvertiser;
         [self setTimer];
     }
     events = [NSMutableArray array];
-    [myBLEScanner scan];
-    [myBLEAdvertiser startAdvertising];
 }
 
 - (void) setTimer {
     [self startTimer];
-    self.silenceTimer = [NSTimer scheduledTimerWithTimeInterval: 30.0
+    self.silenceTimer = [NSTimer scheduledTimerWithTimeInterval: 60.0   
                                                          target: self
                                                        selector: @selector(startTimer)
                                                        userInfo: nil repeats:YES];
@@ -74,11 +72,19 @@ static BLEAdvertiser *myBLEAdvertiser;
     [self unpublish];
     [self checkAndConnect];
     [self publish: code];
+    [myBLEScanner scan];
+    [myBLEAdvertiser restartAdvertising];
+    UILocalNotification *localNotification = [[UILocalNotification alloc] init];
+    localNotification.alertBody = @"Start timer task";
+    [[UIApplication sharedApplication] presentLocalNotificationNow:localNotification];
 }
 
 - (void) stopTimer {
     NSLog(@"stopTimer");
     [self.silenceTimer invalidate];
+    UILocalNotification *localNotification = [[UILocalNotification alloc] init];
+    localNotification.alertBody = @"STOP timer task";
+    [[UIApplication sharedApplication] presentLocalNotificationNow:localNotification];
 }
 
 - (id)createMessageManagerWithApiKey:(nonnull NSString*) apiKey {
@@ -181,13 +187,13 @@ static BLEAdvertiser *myBLEAdvertiser;
                 localNotification.alertBody = @"Message received";
                 [[UIApplication sharedApplication] presentLocalNotificationNow:localNotification];
             }
-            NSLog(@"MESSAGE_FOUND: %@", message);
+            NSLog(@"NEARBY_FOUND: %@", message);
             NSString *messageString = [[NSString alloc] initWithData:message.content encoding: NSUTF8StringEncoding];
-            [myDBUtil createEvent: @"MESSAGE_FOUND" withMessage:messageString];
+            [myDBUtil createEvent: @"NEARBY_FOUND" withMessage:messageString];
         } messageLostHandler:^(GNSMessage *message) {
-            NSLog(@"MESSAGE_LOST: %@", message);
+            NSLog(@"NEARBY_LOST: %@", message);
             // NSString *messageString = [[NSString alloc] initWithData:message.content encoding: NSUTF8StringEncoding];
-            // [weakSelf createEvent: @"MESSAGE_LOST" withMessage:messageString];
+            // [weakSelf createEvent: @"NEARBY_LOST" withMessage:messageString];
         } paramsBlock:^(GNSSubscriptionParams *params) {
             params.strategy = [GNSStrategy strategyWithParamsBlock:^(GNSStrategyParams *params) {
                 params.allowInBackground = YES;
