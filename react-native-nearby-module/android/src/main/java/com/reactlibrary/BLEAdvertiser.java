@@ -31,6 +31,7 @@ import androidx.annotation.RequiresApi;
 
 @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 public class BLEAdvertiser {
+    private String TAG = "BLEAdvertiser";
     private BluetoothManager mBluetoothManager;
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothGattServer mGattServer;
@@ -54,15 +55,15 @@ public class BLEAdvertiser {
         @Override
         public void onConnectionStateChange(BluetoothDevice device, final int status, int newState) {
             super.onConnectionStateChange(device, status, newState);
-            Log.w("BLEAdvertiser", "BlePeripheral onConnectionStateChange ");
+            Log.w(TAG, "BlePeripheral onConnectionStateChange ");
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 if (newState == BluetoothGatt.STATE_CONNECTED) {
-                    Log.v("BLEAdvertiser", "Connected to device: " + device.getAddress());
+                    Log.v(TAG, "Connected to device: " + device.getName() + " " + device.getAddress());
                 } else if (newState == BluetoothGatt.STATE_DISCONNECTED) {
-                    Log.v("BLEAdvertiser", "Disconnected from device");
+                    Log.v(TAG, "Disconnected from device: " + device.getName() + " " + device.getAddress());
                 }
             } else {
-                Log.e("BLEAdvertiser", "Error when connecting: " + status);
+                Log.e(TAG, "Error when connecting: " + status);
             }
         }
 
@@ -70,8 +71,8 @@ public class BLEAdvertiser {
         public void onCharacteristicReadRequest(BluetoothDevice device, int requestId, int offset,
                 BluetoothGattCharacteristic characteristic) {
             super.onCharacteristicReadRequest(device, requestId, offset, characteristic);
-            Log.w("BLEAdvertiser", "Device tried to read characteristic: " + characteristic.getUuid());
-            Log.w("BLEAdvertiser", "Value: " + Arrays.toString(characteristic.getValue()));
+            Log.w(TAG, "Device tried to read characteristic: " + characteristic.getUuid());
+            Log.w(TAG, "Value: " + Arrays.toString(characteristic.getValue()));
 
             if (offset != 0) {
                 mGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_INVALID_OFFSET, offset,
@@ -84,7 +85,7 @@ public class BLEAdvertiser {
         @Override
         public void onNotificationSent(BluetoothDevice device, int status) {
             super.onNotificationSent(device, status);
-            Log.w("BLEAdvertiser", "Notification sent. Status: " + status);
+            Log.w(TAG, "Notification sent. Status: " + status);
         }
 
         @Override
@@ -94,7 +95,7 @@ public class BLEAdvertiser {
             super.onCharacteristicWriteRequest(device, requestId, characteristic, preparedWrite, responseNeeded, offset,
                     value);
             String message = Base64.encodeToString(value, Base64.DEFAULT);
-            Log.w("BLEAdvertiser", "Characteristic Write request: " + message);
+            Log.w(TAG, "Characteristic Write request: " + message);
             if (responseNeeded) {
                 mGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset,
                         characteristic.getValue());
@@ -108,7 +109,7 @@ public class BLEAdvertiser {
     }
 
     private boolean addService() {
-        Log.w("BLEAdvertiser", "BlePeripheral addService: " + this.appIdentifier);
+        Log.w(TAG, "BlePeripheral addService: " + this.appIdentifier);
         UUID SERVICE_UUID = UUID.fromString(this.appIdentifier);
         BluetoothGattService mGattService = new BluetoothGattService(SERVICE_UUID,
                 BluetoothGattService.SERVICE_TYPE_PRIMARY);
@@ -123,24 +124,22 @@ public class BLEAdvertiser {
     }
 
     public void startAdvertising() {
-        Log.e("BLEAdvertiser", "startAdvertising");
-        this.stopAdvertising();
-
+        Log.e(TAG, "startAdvertising");
         mBluetoothManager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
         mBluetoothAdapter = mBluetoothManager.getAdapter();
 
         if (mBluetoothAdapter == null) {
-            Log.e("BLEAdvertiser", "BLUETOOTH_UNAVAILABLE: Bluetooth is not available.");
+            Log.e(TAG, "BLUETOOTH_UNAVAILABLE: Bluetooth is not available.");
             addEvent("BLE_ADVERTISER_ERROR", "Start advertising failed: Bluetooth is not available.");
             return;
         }
         if (!mBluetoothAdapter.isEnabled()) {
-            Log.e("BLEAdvertiser", "BLUETOOTH_DISABLED: Bluetooth is disabled.");
+            Log.e(TAG, "BLUETOOTH_DISABLED: Bluetooth is disabled.");
             addEvent("BLE_ADVERTISER_ERROR", "Start advertising failed: Bluetooth is disabled.");
             return;
         }
         if (!mBluetoothAdapter.isMultipleAdvertisementSupported()) {
-            Log.e("BLEAdvertiser", "BLE_UNSUPPORTED: Bluetooth LE Advertising not supported on this device.");
+            Log.e(TAG, "BLE_UNSUPPORTED: Bluetooth LE Advertising not supported on this device.");
             addEvent("BLE_ADVERTISER_ERROR",
                     "Start advertising failed: Bluetooth LE Advertising not supported on this device.");
             return;
@@ -153,7 +152,7 @@ public class BLEAdvertiser {
 
             boolean addedFlag = this.addService();
             if (!addedFlag) {
-                Log.e("BLEAdvertiser", "add service failed");
+                Log.e(TAG, "add service failed");
             } else {
                 AdvertiseSettings settings = new AdvertiseSettings.Builder()
                         .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY).setConnectable(true)
@@ -167,19 +166,19 @@ public class BLEAdvertiser {
                     public void onStartSuccess(AdvertiseSettings settingsInEffect) {
                         super.onStartSuccess(settingsInEffect);
                         advertising = true;
-                        Log.w("BLEAdvertiser", "Started Advertising " + settingsInEffect);
+                        Log.w(TAG, "Started Advertising " + settingsInEffect);
+                        addEvent("BLE_ADVERTISER", "Start advertising success with UUID: " + uniqueIdentifier);
                     }
 
                     @Override
                     public void onStartFailure(int errorCode) {
                         advertising = false;
-                        Log.e("BLEAdvertiser", "Advertising onStartFailure: " + errorCode);
+                        Log.e(TAG, "Advertising onStartFailure: " + errorCode);
+                        addEvent("BLE_ADVERTISER", "Advertising onStartFailure: " + errorCode);
                         super.onStartFailure(errorCode);
                     }
                 };
                 advertiser.startAdvertising(settings, data, advertisingCallback);
-                ;
-                addEvent("BLE_ADVERTISER", "Start advertising success with UUID: " + this.uniqueIdentifier);
             }
         }
     }
@@ -191,6 +190,7 @@ public class BLEAdvertiser {
         if (mBluetoothAdapter != null && mBluetoothAdapter.isEnabled() && advertiser != null) {
             advertiser.stopAdvertising(advertisingCallback);
         }
+        addEvent("BLE_ADVERTISER", "Advertising stopped");
     }
 
     public boolean isAdvertising() {

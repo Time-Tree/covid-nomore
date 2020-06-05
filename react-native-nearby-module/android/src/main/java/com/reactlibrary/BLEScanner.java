@@ -17,7 +17,9 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Build;
+import android.os.Looper;
 import android.os.ParcelUuid;
+import android.os.Handler;
 import android.util.Log;
 
 import java.lang.reflect.Method;
@@ -36,8 +38,8 @@ import static android.bluetooth.BluetoothDevice.TRANSPORT_LE;
 import static android.bluetooth.BluetoothGatt.GATT_SUCCESS;
 
 @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-public class NearbyBLEScanner {
-    private static String TAG = "NearbyBLEScanner";
+public class BLEScanner {
+    private static String TAG = "BLEScanner";
     private BluetoothLeScanner scanner;
     private boolean isStarted;
     private NearbySql dbHelper;
@@ -45,7 +47,7 @@ public class NearbyBLEScanner {
     private List<BluetoothGatt> gattConnections = new ArrayList<>();
     private HashMap<String, Long> deviceTimes = new HashMap<>();
 
-    public NearbyBLEScanner(final BluetoothAdapter bluetoothAdapter, NearbySql dbHelper, final Context context) {
+    public BLEScanner(final BluetoothAdapter bluetoothAdapter, NearbySql dbHelper, final Context context) {
         this.dbHelper = dbHelper;
         this.context = context;
         scanner = bluetoothAdapter.getBluetoothLeScanner();
@@ -69,6 +71,7 @@ public class NearbyBLEScanner {
             long trimTime = deviceTime / 10000 * 10000;
             if (newTimestamp == trimTime)
                 return;
+            Log.i(TAG, "onScanResult: " + device.getAddress());
 
             deviceTimes.put(device.getAddress(), Calendar.getInstance().getTimeInMillis());
 
@@ -79,8 +82,11 @@ public class NearbyBLEScanner {
         @Override
         public void onScanFailed(int errorCode) {
             super.onScanFailed(errorCode);
-            Log.i(TAG, "error");
+            Log.i(TAG, "onScanFailed error: " + errorCode);
             addEvent("BLE_SCANNER_ERROR", String.valueOf(errorCode));
+            if (errorCode == SCAN_FAILED_ALREADY_STARTED) {
+                restart();
+            }
         }
     };
 
@@ -90,35 +96,55 @@ public class NearbyBLEScanner {
         public void onConnectionStateChange(final BluetoothGatt gatt, final int status, final int newState) {
             if (status == GATT_SUCCESS) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
-                    gatt.discoverServices();
+                    Log.i(TAG, "STATE_CONNECTED: " + gatt.getDevice().getAddress());
+                    // gatt.discoverServices();
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            boolean ans = gatt.discoverServices();
+                            Log.d(TAG, "Discover Services started: " + ans);
+                        }
+                    });
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                    Log.i(TAG, "STATE_DISCONNECTED: " + gatt.getDevice().getName());
                     gatt.close();
                 } else {
+                    Log.i(TAG, "STATE: " + newState);
                     gatt.disconnect();
                 }
             } else {
+                Log.i(TAG, "STATUS: " + status);
+                deviceTimes.remove(gatt.getDevice().getAddress());
                 gatt.close();
+                gatt.disconnect();
             }
         }
 
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
             if (status == GATT_SUCCESS) {
+                Log.i(TAG, "onServicesDiscovered: " + gatt.getDevice().getAddress());
                 BluetoothGattService service = gatt.getService(UUID.fromString("a9ecdb59-974e-43f0-9d93-27d5dcb060d6"));
+                Log.i(TAG, "service " + service.toString());
                 List<BluetoothGattCharacteristic> gattCharacteristics = service.getCharacteristics();
+                Log.i(TAG, "gattCharacteristics size" + gattCharacteristics.size());
                 for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
+                    Log.i(TAG, "gattCharacteristic uuid" + gattCharacteristic.getUuid());
                     if (gattCharacteristic.getUuid() != null) {
                         String uuid = gattCharacteristic.getUuid().toString();
-                        if(uuid.substring(18) == "-0000-000000000000") {
-                            uuid = uuid.substring(0,18);
+                        Log.i(TAG, "uuid.substring(18): " + uuid.substring(18));
+                        if (uuid.substring(18) == "-0000-000000000000") {
+                            uuid = uuid.substring(0, 18);
                         }
                         String message = "NM: " + gatt.getDevice().getName() + " ID: " + uuid;
                         addEvent("BLE_FOUND", message);
                         Log.i(TAG, "BLE FOUND" + uuid);
                     }
                 }
-
+            } else {
+                Log.i(TAG, "onServicesDiscovered: failed" + status);
             }
+            Log.i(TAG, "onServicesDiscovered: DISCONNECT");
             gatt.disconnect();
         }
 
@@ -151,11 +177,11 @@ public class NearbyBLEScanner {
             addEvent("BLE_SCANNER", "Scanning started");
         } catch (Exception e) {
             addEvent("BLE_SCANNER_ERROR", "Start advertising failed: " + e.getMessage());
-            Log.e(TAG, e.getMessage());
+            Log.e(TAG, "Start advertising failed: " + e.getMessage());
         }
     }
 
-    private void clearServicesCache() {
+    public void clearServicesCache() {
         List<BluetoothGatt> toRemove = new ArrayList<>();
         for (BluetoothGatt gatt : gattConnections) {
             try {
@@ -174,13 +200,15 @@ public class NearbyBLEScanner {
             scanner.stopScan(scanCallback);
             isStarted = false;
             Log.i(TAG, "Scan stopped");
+            addEvent("BLE_SCANNER", "Scanning stopped");
         } catch (Exception e) {
-            Log.e(TAG, e.getMessage());
+            Log.e(TAG, "Scan stop " + e.getMessage());
         }
     }
 
     public void restart() {
         try {
+            Log.i(TAG, "Scan restarted");
             if (isStarted) {
                 stop();
                 clearServicesCache();
