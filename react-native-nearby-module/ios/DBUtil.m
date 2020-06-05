@@ -14,22 +14,22 @@ static DBManager *myDBManager;
 
 - (void) createEvent:(nonnull NSString*)eventType withMessage:(nonnull NSString*) message {
     NSLog(@"createEvent: eventType=%@ message=%@", eventType, message);
-    NSTimeInterval timeStamp = [[NSDate date] timeIntervalSince1970];
-    NSNumber *timeStampObj = [NSNumber numberWithDouble: timeStamp];
-    NSString *formattedDate = [self getFormattedDate];
+    NSTimeInterval timestamp = [[NSDate date] timeIntervalSince1970];
+    NSNumber *timestampObj = [NSNumber numberWithLong:timestamp * 1000.0];
+    NSString *formattedDate = [self getFormattedDate: timestamp];
     NSDictionary *dict = @{
         @"eventType": eventType,
         @"message": message,
         @"formatDate": formattedDate,
-        @"timestamp": timeStampObj
+        @"timestamp": timestampObj
     };
     [myDBManager saveData: dict];
 }
 
-- (NSString *) getFormattedDate {
+- (NSString *) getFormattedDate:(NSTimeInterval) timestamp {
     NSDateFormatter *dateFormatter=[[NSDateFormatter alloc] init];
     [dateFormatter setDateFormat:@"HH:mm:ss:SS"];
-    NSString *formattedDate = [dateFormatter stringFromDate:[NSDate date]];
+    NSString *formattedDate = [dateFormatter stringFromDate:[NSDate dateWithTimeIntervalSince1970:timestamp]];
     return formattedDate;
 }
 

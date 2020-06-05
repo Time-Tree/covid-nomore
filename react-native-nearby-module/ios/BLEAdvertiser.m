@@ -53,14 +53,18 @@ static NSString *uniqueIdentifier;
 }
 
 - (void) startAdvertising {
+    [self sendNotification:@"Start advertising"];
     
     CBManagerState state = [self.peripheralManager state];
     if(state == CBManagerStateUnauthorized) {
         NSLog(@"Start advertising failed. CoreBluetooth BLE state is unauthorized.");
+        NSString *message = [NSString stringWithFormat: @"Start advertising failed: CoreBluetooth BLE state is unauthorized."];
+        [myDBUtil createEvent: @"BLE_ADVERTISER_ERROR" withMessage:message];
     }
     [self.peripheralManager removeAllServices];
     if(self.peripheralManager.isAdvertising) {
         NSLog(@"Already advertising");
+        NSString *message = [NSString stringWithFormat: @"Start advertising failed: Already advertising."];
         [myDBUtil createEvent: @"BLE_ADVERTISER_ERROR" withMessage:message];
         return;
     }
@@ -77,10 +81,12 @@ static NSString *uniqueIdentifier;
 - (void) stopAdvertising {
     NSLog(@"stopAdvertising");
     [self.peripheralManager stopAdvertising];
+    [myDBUtil createEvent: @"BLE_ADVERTISER" withMessage:@"Advertising stopped"];
 }
 
 - (void) peripheralManager:(CBPeripheralManager *)peripheral didAddService:(CBService *)service error:(NSError *)error {
     NSLog(@"peripheralManagerDidAddService");
+    [self sendNotification:@"didAddService"];
     if (error) {
         NSLog(@"Error publishing service: %@", [error localizedDescription]);
         [myDBUtil createEvent: @"Error publishing service" withMessage:[error localizedDescription]];
@@ -96,15 +102,26 @@ static NSString *uniqueIdentifier;
 - (void)peripheralManagerDidStartAdvertising:(CBPeripheralManager *)peripheral error:(NSError *)error {
     NSLog(@"peripheralManagerDidStartAdvertising: %@", peripheral.description);
     if (error) {
+        [self sendNotification:@"Error advertising"];
         NSLog(@"Error advertising: %@", [error localizedDescription]);
         NSString *message = [NSString stringWithFormat: @"Error advertising: %@", [error localizedDescription]];
         [myDBUtil createEvent: @"BLE_ADVERTISER_ERROR" withMessage:message];
     } else {
+        [self sendNotification:@"peripheralManagerDidStartAdvertising"];
         NSLog(@"Start advertising success");
         NSString *message = [NSString stringWithFormat: @"Start advertising success with UUID: %@", uniqueIdentifier];
         [myDBUtil createEvent: @"BLE_ADVERTISER" withMessage:message];
     }
 }
 
+- (void)peripheral:(CBPeripheral *)peripheral didModifyServices:(NSArray<CBService *> *)invalidatedServices {
+    NSLog(@"in advertiser didModifyServices: %@", peripheral.services);
+}
+
+- (void) sendNotification:(NSString*) message {
+    UILocalNotification *localNotification = [[UILocalNotification alloc] init];
+    localNotification.alertBody = message;
+    [[UIApplication sharedApplication] presentLocalNotificationNow:localNotification];
+}
 
 @end

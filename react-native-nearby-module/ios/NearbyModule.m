@@ -1,7 +1,9 @@
 #import "NearbyModule.h"
-#import "NearbyService.h"
+#import "Service.h"
+#import "NearbyManager.h"
 
-static NearbyService* nearbyService = nil;
+static Service* service = nil;
+static NearbyManager* nearbyManager = nil;
 
 @implementation NearbyModule 
 
@@ -12,13 +14,13 @@ RCT_EXPORT_MODULE()
 }
 - init {
     self = [super init];
-    nearbyService = [[NearbyService alloc] init];
+    service = [[Service alloc] init];
+    nearbyManager = [[NearbyManager alloc] init];
     return self;
 }
 
 RCT_EXPORT_METHOD(startService: (nonnull NSString *)apiKey) {
-    nearbyService = [[NearbyService alloc] init];
-    [nearbyService startService:apiKey];
+    [service startService:apiKey];
 }
 
 RCT_REMAP_METHOD(getStatus,
@@ -26,10 +28,10 @@ RCT_REMAP_METHOD(getStatus,
                  getStatusRejecter:(RCTPromiseRejectBlock)reject) {
     
     @try {
-        Boolean isConnected = [nearbyService isConnected];
-        Boolean isSubscribing = [nearbyService isSubscribing];
+        Boolean isConnected = [nearbyManager isConnected];
+        Boolean isSubscribing = [nearbyManager isSubscribing];
         if (!isConnected || !isSubscribing) {
-            [nearbyService checkAndConnect];
+            [nearbyManager checkAndConnect];
         }
         NSDictionary *dict = @{
             @"isConnected": [NSNumber numberWithBool:isConnected],
@@ -44,7 +46,7 @@ RCT_REMAP_METHOD(getStatus,
 RCT_REMAP_METHOD(toggleState,
                  toggleStateWithResolver:(RCTPromiseResolveBlock)resolve
                  toggleStateRejecter:(RCTPromiseRejectBlock)reject) {
-    [nearbyService deleteAllData];
+    [service deleteAllData];
     resolve([NSNumber numberWithBool:TRUE]);
 }
 

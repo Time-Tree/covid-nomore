@@ -74,7 +74,7 @@ class NearbyAPI {
       store.dispatch(eventsActions.addEventAction(newEvents));
       store.dispatch(handshakeActions.addHandshakeAction(handshakes));
       if (newEvents.length) {
-        const lastSync = newEvents[newEvents.length - 1].timestamp;
+        const lastSync = newEvents[0].timestamp;
         await db.executeSql(
           `DELETE FROM NearbyEvents WHERE timestamp <= ${lastSync}`
         );
@@ -82,6 +82,8 @@ class NearbyAPI {
       await db.close();
       this.lock = false;
     } catch (error) {
+      this.lock = false;
+    } finally {
       this.lock = false;
     }
   };

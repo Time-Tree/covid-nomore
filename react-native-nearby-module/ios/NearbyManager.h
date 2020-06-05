@@ -1,15 +1,17 @@
 #import <GNSMessages.h>
 
-@interface NearbyService : NSObject
+@interface NearbyManager : NSObject
 
 @property(nonatomic, strong) id<GNSPublication> publication;
 @property(nonatomic, strong) id<GNSSubscription> subscription;
-@property (nonatomic, retain) NSTimer *silenceTimer;
 
-- (void) startService:(nonnull NSString*) apiKey;
 - (Boolean) isSubscribing;
 - (Boolean) isConnected;
 - (void) checkAndConnect;
-- (void) deleteAllData;
+- (void) startService:(nonnull NSString*) apiKey;
+- (void) publish: (int)code;
+- (void) unpublish;
+- (void) subscribe;
+- (void) unsubscribe;
 
 @end

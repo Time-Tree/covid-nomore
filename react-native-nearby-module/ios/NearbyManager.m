@@ -1,90 +1,26 @@
-#import "NearbyService.h"
+#import "NearbyManager.h"
 #import "DBUtil.h"
-#import "BLEScanner.h"
-#import "BLEAdvertiser.h"
 #import <GNSMessages.h>
 #import <CoreBluetooth/CoreBluetooth.h>
-#import <BackgroundTasks/BackgroundTasks.h>
 #include <stdlib.h>
 
 
 static GNSMessageManager *_messageManager;
 static NSString *_apiKey;
 static NSString *uniqueIdentifier;
-static int code;
-static CBCentralManager *myCentralManager;
-static NSMutableArray *events;
 static DBUtil *myDBUtil;
-static BLEScanner *myBLEScanner;
-static BLEAdvertiser *myBLEAdvertiser;
 
-@implementation NearbyService
+@implementation NearbyManager
 
 - init {
     self = [super init];
-    if([NSThread isMainThread]) {
-        if ([UIApplication instancesRespondToSelector:@selector(registerUserNotificationSettings:)]) {
-            [[UIApplication sharedApplication] registerUserNotificationSettings:
-             [UIUserNotificationSettings settingsForTypes:
-              UIUserNotificationTypeAlert | UIUserNotificationTypeBadge | UIUserNotificationTypeSound
-                                               categories:nil]];
-        }
-        myDBUtil = [[DBUtil alloc] init];
-        myBLEScanner = [[BLEScanner alloc] init];
-        myBLEAdvertiser = [[BLEAdvertiser alloc] init];
-    }
-    [self setBackgroundTask];
+    myDBUtil = [[DBUtil alloc] init];
     return self;
-}
-
-- (void) setBackgroundTask {
-    UIBackgroundTaskIdentifier bgTask;
-    UIApplication  *app = [UIApplication sharedApplication];
-    bgTask = [app beginBackgroundTaskWithExpirationHandler:^{
-        [app endBackgroundTask:bgTask];
-    }];
 }
 
 - (void) startService:(nonnull NSString*) apiKey {
     uniqueIdentifier = [[[UIDevice currentDevice] identifierForVendor] UUIDString];
     [self createMessageManagerWithApiKey: apiKey];
-    if([NSThread isMainThread] == false) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            [self setTimer];
-        });
-    } else {
-        [self setTimer];
-    }
-    events = [NSMutableArray array];
-}
-
-- (void) setTimer {
-    [self startTimer];
-    self.silenceTimer = [NSTimer scheduledTimerWithTimeInterval: 60.0   
-                                                         target: self
-                                                       selector: @selector(startTimer)
-                                                       userInfo: nil repeats:YES];
-}
-
-- (void) startTimer {
-    code = 1000 + arc4random_uniform(9000);
-    NSLog(@"code = %d", code);
-    [self unpublish];
-    [self checkAndConnect];
-    [self publish: code];
-    [myBLEScanner scan];
-    [myBLEAdvertiser restartAdvertising];
-    UILocalNotification *localNotification = [[UILocalNotification alloc] init];
-    localNotification.alertBody = @"Start timer task";
-    [[UIApplication sharedApplication] presentLocalNotificationNow:localNotification];
-}
-
-- (void) stopTimer {
-    NSLog(@"stopTimer");
-    [self.silenceTimer invalidate];
-    UILocalNotification *localNotification = [[UILocalNotification alloc] init];
-    localNotification.alertBody = @"STOP timer task";
-    [[UIApplication sharedApplication] presentLocalNotificationNow:localNotification];
 }
 
 - (id)createMessageManagerWithApiKey:(nonnull NSString*) apiKey {
@@ -132,20 +68,20 @@ static BLEAdvertiser *myBLEAdvertiser;
     }
 }
 
--(void) publish: (int)code {
+- (void) publish: (int)code {
     NSLog(@"publish");
     NSString *messageString = [NSString stringWithFormat:@"%@-%d", uniqueIdentifier, code];
     NSLog(@"Attempting to publish: %@", messageString);
     @try {
         if(![self isConnected]) {
-            [myDBUtil createEvent: @"PUBLISH_FAILED" withMessage:@"Google API Client not connected. Call .connect() before publishing."];
+            [myDBUtil createEvent: @"NEARBY_PUBLISH_FAILED" withMessage:@"Google API Client not connected. Call .connect() before publishing."];
             @throw [NSException
                     exceptionWithName:@"NotConnected"
                     reason:@"Messenger not connected. Call connect: before publishing."
                     userInfo:nil];
         }
         if(messageString == nil) {
-            [myDBUtil createEvent: @"PUBLISH_FAILED" withMessage:@"Cannot publish an empty message"];
+            [myDBUtil createEvent: @"NEARBY_PUBLISH_FAILED" withMessage:@"Cannot publish an empty message"];
             NSLog(@"Cannot publish an empty message");
             return;
         }
@@ -156,11 +92,11 @@ static BLEAdvertiser *myBLEAdvertiser;
                 params.allowInBackground = YES;
             }];
         }];
-        [myDBUtil createEvent: @"PUBLISH_SUCCESS" withMessage:messageString];
+        [myDBUtil createEvent: @"NEARBY_PUBLISH_SUCCESS" withMessage:messageString];
         NSLog(@"Successfully published: %@", messageString);
     } @catch(NSException *exception) {
         if(exception.reason != nil) {
-            [myDBUtil createEvent: @"PUBLISH_FAILED" withMessage:exception.reason];
+            [myDBUtil createEvent: @"NEARBY_PUBLISH_FAILED" withMessage:exception.reason];
             NSLog(@"Publish failed: %@", exception.reason);
         }
     }
@@ -168,12 +104,11 @@ static BLEAdvertiser *myBLEAdvertiser;
 
 
 
--(void) subscribe {
+- (void) subscribe {
     NSLog(@"subscribe");
-    if([NSThread isMainThread] == false) return;
     @try {
         if(![self isConnected]) {
-            [myDBUtil createEvent: @"SUBSCRIBE_FAILED" withMessage: @"Google API Client not connected. Call .connect() before publishing."];
+            [myDBUtil createEvent: @"NEARBY_SUBSCRIBE_FAILED" withMessage: @"Google API Client not connected. Call .connect() before publishing."];
             @throw [NSException
                     exceptionWithName:@"NotConnected"
                     reason:@"Messenger not connected. Call connect: before subscribing."
@@ -199,11 +134,11 @@ static BLEAdvertiser *myBLEAdvertiser;
                 params.allowInBackground = YES;
             }];
         }];
-        [myDBUtil createEvent: @"SUBSCRIBE_SUCCESS" withMessage:@""];
+        [myDBUtil createEvent: @"NEARBY_SUBSCRIBE_SUCCESS" withMessage:@""];
         NSLog(@"Successfully Subscribed.");
     } @catch(NSException *exception) {
         if(exception.reason != nil) {
-            [myDBUtil createEvent: @"SUBSCRIBE_FAILED" withMessage:exception.reason];
+            [myDBUtil createEvent: @"NEARBY_SUBSCRIBE_FAILED" withMessage:exception.reason];
             NSLog(@"SUBSCRIBE_FAILED: %@", exception.reason);
         }
     }
@@ -225,13 +160,15 @@ static BLEAdvertiser *myBLEAdvertiser;
     }
 }
 
--(void) unpublish {
+- (void) unpublish {
     NSLog(@"unpublish");
+    [myDBUtil createEvent: @"NEARBY_UNPUBLISH" withMessage:@""];
     _publication = nil;
 }
 
--(void) unsubscribe {
+- (void) unsubscribe {
     NSLog(@"unsubscribe");
+    [myDBUtil createEvent: @"NEARBY_UNSUBSCRIBE" withMessage:@""];
     _subscription = nil;
 }
 
@@ -239,13 +176,6 @@ static BLEAdvertiser *myBLEAdvertiser;
     if(![self isConnected]) {
         [self sharedMessageManager];
     }
-    if(![self isSubscribing]) {
-        [self subscribe];
-    }
-}
-
-- (void) deleteAllData {
-    [myDBUtil deleteAllData];
 }
 
 @end

@@ -55,7 +55,7 @@ static NSMutableDictionary *deviceTimes;
 }
 
 - (void) scan {
-    [self stopScan];
+    [self.centralManager stopScan];
     NSLog(@"Scanning started");
     NSDictionary *options = [NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithBool:YES], CBCentralManagerScanOptionAllowDuplicatesKey, nil];
     NSDictionary *scanOptions = [NSDictionary dictionaryWithObject:[NSNumber numberWithBool:NO] forKey:CBCentralManagerScanOptionAllowDuplicatesKey];
@@ -66,6 +66,7 @@ static NSMutableDictionary *deviceTimes;
 
 - (void) stopScan {
     NSLog(@"Scanning stopped");
+    [myDBUtil createEvent: @"BLE_SCANNER" withMessage:@"Scanning stopped"];
     [self.centralManager stopScan];
 }
 
@@ -122,6 +123,8 @@ static NSMutableDictionary *deviceTimes;
         }
         NSString *messageString = [NSString stringWithFormat: @"NM: %@, ID: %@", peripheral.name, uuid];
         [myDBUtil createEvent: @"BLE_FOUND" withMessage:messageString];
+//        [self.centralManager cancelPeripheralConnection:peripheral];
+//        discoveredPeripheral = nil;
     }
 }
 
