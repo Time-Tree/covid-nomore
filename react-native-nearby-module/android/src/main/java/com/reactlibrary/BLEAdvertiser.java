@@ -69,7 +69,7 @@ public class BLEAdvertiser {
 
         @Override
         public void onCharacteristicReadRequest(BluetoothDevice device, int requestId, int offset,
-                BluetoothGattCharacteristic characteristic) {
+                                                BluetoothGattCharacteristic characteristic) {
             super.onCharacteristicReadRequest(device, requestId, offset, characteristic);
             Log.w(TAG, "Device tried to read characteristic: " + characteristic.getUuid());
             Log.w(TAG, "Value: " + Arrays.toString(characteristic.getValue()));
@@ -90,8 +90,8 @@ public class BLEAdvertiser {
 
         @Override
         public void onCharacteristicWriteRequest(BluetoothDevice device, int requestId,
-                BluetoothGattCharacteristic characteristic, boolean preparedWrite, boolean responseNeeded, int offset,
-                byte[] value) {
+                                                 BluetoothGattCharacteristic characteristic, boolean preparedWrite, boolean responseNeeded, int offset,
+                                                 byte[] value) {
             super.onCharacteristicWriteRequest(device, requestId, characteristic, preparedWrite, responseNeeded, offset,
                     value);
             String message = Base64.encodeToString(value, Base64.DEFAULT);
@@ -117,7 +117,7 @@ public class BLEAdvertiser {
         UUID CHARACTERISTIC_UUID = UUID.fromString(characteristicId);
 
         BluetoothGattCharacteristic mGattCharacteristic = new BluetoothGattCharacteristic(CHARACTERISTIC_UUID,
-                BluetoothGattCharacteristic.PROPERTY_READ, BluetoothGattCharacteristic.PERMISSION_READ);
+                BluetoothGattCharacteristic.PROPERTY_READ | BluetoothGattCharacteristic.PROPERTY_NOTIFY, BluetoothGattCharacteristic.PERMISSION_READ | BluetoothGattCharacteristic.PERMISSION_WRITE);
         mGattService.addCharacteristic(mGattCharacteristic);
 
         return mGattServer.addService(mGattService);
@@ -155,10 +155,11 @@ public class BLEAdvertiser {
                 Log.e(TAG, "add service failed");
             } else {
                 AdvertiseSettings settings = new AdvertiseSettings.Builder()
-                        .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY).setConnectable(true)
+                        .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_BALANCED).setConnectable(true)
                         .setTimeout(0).setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_MEDIUM).build();
 
                 AdvertiseData data = new AdvertiseData.Builder().setIncludeDeviceName(false)
+                        .setIncludeTxPowerLevel(false)
                         .addServiceUuid(new ParcelUuid(UUID.fromString(this.appIdentifier))).build();
 
                 advertisingCallback = new AdvertiseCallback() {

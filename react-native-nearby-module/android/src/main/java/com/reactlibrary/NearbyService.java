@@ -140,7 +140,7 @@ public class NearbyService extends Service {
                 mBLEAdvertiser.startAdvertising();
             }
             if (mBLEScanner != null) {
-                mBLEScanner.start();
+                mBLEScanner.startScan();
             }
             createStopBLETimerTask();
         }
@@ -153,9 +153,9 @@ public class NearbyService extends Service {
             @Override
             public void run() {
                 Log.i(TAG, "createStopBLETimerTask !!!");
-                mBLEAdvertiser.stopAdvertising();
-                mBLEScanner.stop();
-                mBLEScanner.clearServicesCache();
+                // mBLEAdvertiser.stopAdvertising();
+                // mBLEScanner.stopScan();
+                // mBLEScanner.clearServicesCache();
             }
         }, 3 * 60 * 1000);
     }
