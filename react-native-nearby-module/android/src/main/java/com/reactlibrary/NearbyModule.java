@@ -73,4 +73,9 @@ public class NearbyModule extends ReactContextBaseJavaModule implements ServiceC
         }
     }
 
+    @ReactMethod
+    public void restartService() {
+        nearbyService.restartService();
+    }
+
 }

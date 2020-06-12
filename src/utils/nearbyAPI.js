@@ -104,6 +104,81 @@ class NearbyAPI {
       console.error('clearEvents', error);
     }
   };
+
+  saveSettings = async data => {
+    try {
+      SQLite.enablePromise(true);
+      let db;
+      if (Platform.OS === 'android') {
+        db = await SQLite.openDatabase('NearbyEvents');
+      } else {
+        db = await SQLite.openDatabase({
+          name: 'NearbyEvents.sqlite',
+          location: 'Documents'
+        });
+      }
+      console.log('Saving settings data', data);
+      let query = `UPDATE Settings SET `;
+      const labels = Object.keys(data);
+      labels.map(async (key, index) => {
+        query += `${key} = ${data[key]}`;
+        if (index < labels.length - 1) {
+          query += ', ';
+        }
+      });
+      query += ' WHERE _ID = 1';
+      await db.executeSql(query);
+      await db.close();
+      NearbyModule.restartService();
+    } catch (error) {}
+  };
+
+  getSettings = async () => {
+    try {
+      SQLite.enablePromise(true);
+      let db;
+      if (Platform.OS === 'android') {
+        db = await SQLite.openDatabase('NearbyEvents');
+      } else {
+        db = await SQLite.openDatabase({
+          name: 'NearbyEvents.sqlite',
+          location: 'Documents'
+        });
+      }
+      console.log('Getting setting data');
+      let settings = {};
+      const result = await db.executeSql(
+        `SELECT * FROM Settings WHERE _ID = 1`
+      );
+      if (result[0]) {
+        const res = result[0];
+        settings = res.rows.item(0);
+      }
+      await db.close();
+      delete settings._ID;
+      return settings;
+    } catch (error) {}
+  };
+
+  setToggle = async (type, status) => {
+    try {
+      SQLite.enablePromise(true);
+      let db;
+      if (Platform.OS === 'android') {
+        db = await SQLite.openDatabase('NearbyEvents');
+      } else {
+        db = await SQLite.openDatabase({
+          name: 'NearbyEvents.sqlite',
+          location: 'Documents'
+        });
+      }
+      console.log('Saving new status', type, status);
+      const query = `UPDATE Settings SET ${type} = ${status} WHERE _ID = 1`;
+      await db.executeSql(query);
+      await db.close();
+      NearbyModule.restartService();
+    } catch (error) {}
+  };
 }
 
 export default new NearbyAPI();

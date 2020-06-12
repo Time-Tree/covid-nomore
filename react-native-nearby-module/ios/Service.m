@@ -15,10 +15,10 @@ static BLEAdvertiser *myBLEAdvertiser;
 static NearbyManager *myNearbyManager;
 static int code;
 
-static const int BLE_REPEATS_INTERVAL = 3 * 60.0; //minutes
-static const int BLE_PAUSE_TIME = 1 * 60.0;
-static const int NEARBY_REPEATS_INTERVAL = 5 * 60.0;
-static const int NEARBY_PAUSE_TIME = 2 * 60.0;
+static int BLE_INTERVAL = 3 * 60.0; //minutes
+static int BLE_DURATION = 1 * 60.0;
+static int NEARBY_INTERVAL = 3 * 60.0;
+static int NEARBY_DURATION = 1 * 60.0;
 
 @implementation Service
 
@@ -50,22 +50,60 @@ static const int NEARBY_PAUSE_TIME = 2 * 60.0;
 
 - (void) startService:(nonnull NSString*) apiKey {
     [myNearbyManager startService: apiKey];
+    NSDictionary *settings = [myDBUtil getSettingsData];
+    [self parseSettingsData: settings];
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self nearbyTimerTask];
-        [self bleTimerTask];
+        if ([[settings valueForKey:@"bleProcess"] integerValue] == 1) {
+            [self bleTimerTask];
+        }
+        if ([[settings valueForKey:@"nearbyProcess"] integerValue] == 1) {
+            [self nearbyTimerTask];
+        }
     });
+}
+
+- (void) restartService {
+    NSLog(@"restartService");
+    NSDictionary *settings = [myDBUtil getSettingsData];
+    [self parseSettingsData: settings];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self stopAllProcess];
+        if ([[settings valueForKey:@"bleProcess"] integerValue] == 1) {
+            [self bleTimerTask];
+        }
+        if ([[settings valueForKey:@"nearbyProcess"] integerValue] == 1) {
+            [self nearbyTimerTask];
+        }
+    });
+}
+
+- (void) stopAllProcess {
+    [self stopNearbyTimerTask];
+    [self stopBLETimerTask];
+    [self.nearbyStartTimer invalidate];
+    [self.nearbyStopTimer invalidate];
+    [self.bleStartTimer invalidate];
+    [self.bleStopTimer invalidate];
+}
+
+- (void) parseSettingsData: (NSDictionary*) settings {
+    BLE_INTERVAL = [[settings valueForKey:@"bleInterval"] integerValue] * 60.0;
+    BLE_DURATION = [[settings valueForKey:@"bleDuration"] integerValue] * 60.0;
+    NEARBY_INTERVAL = [[settings valueForKey:@"nearbyInterval"] integerValue] * 60.0;
+    NEARBY_DURATION = [[settings valueForKey:@"nearbyDuration"] integerValue] * 60.0;
 }
 
 - (void) nearbyTimerTask {
     [self startNearbyTimerTask];
-    self.nearbyStartTimer = [NSTimer scheduledTimerWithTimeInterval: NEARBY_REPEATS_INTERVAL
+    self.nearbyStartTimer = [NSTimer scheduledTimerWithTimeInterval: NEARBY_INTERVAL
                                                              target: self
                                                            selector: @selector(startNearbyTimerTask)
                                                            userInfo: nil repeats:YES];
 }
 
 - (void) bleTimerTask {
-    self.bleStartTimer = [NSTimer scheduledTimerWithTimeInterval: BLE_REPEATS_INTERVAL
+    [self startBLETimerTask];
+    self.bleStartTimer = [NSTimer scheduledTimerWithTimeInterval: BLE_INTERVAL
                                                           target: self
                                                         selector: @selector(startBLETimerTask)
                                                         userInfo: nil repeats:YES];
@@ -78,7 +116,7 @@ static const int NEARBY_PAUSE_TIME = 2 * 60.0;
     [myNearbyManager subscribe];
     [myNearbyManager publish: code];
     [self sendNotification:@"Start nearby timer task"];
-    self.nearbyStopTimer = [NSTimer scheduledTimerWithTimeInterval: NEARBY_PAUSE_TIME
+    self.nearbyStopTimer = [NSTimer scheduledTimerWithTimeInterval: NEARBY_DURATION
                                                             target: self
                                                           selector: @selector(stopNearbyTimerTask)
                                                           userInfo: nil repeats:NO];
@@ -96,7 +134,7 @@ static const int NEARBY_PAUSE_TIME = 2 * 60.0;
     [myBLEScanner scan];
     [myBLEAdvertiser startAdvertising];
     [self sendNotification:@"Start BLE timer task"];
-    self.bleStopTimer = [NSTimer scheduledTimerWithTimeInterval: BLE_PAUSE_TIME
+    self.bleStopTimer = [NSTimer scheduledTimerWithTimeInterval: BLE_DURATION
                                                          target: self
                                                        selector: @selector(stopBLETimerTask)
                                                        userInfo: nil repeats:NO];

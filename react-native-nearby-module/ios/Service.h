@@ -8,5 +8,6 @@
 
 - (void) startService:(nonnull NSString*) apiKey;
 - (void) deleteAllData;
+- (void) restartService;
 
 @end

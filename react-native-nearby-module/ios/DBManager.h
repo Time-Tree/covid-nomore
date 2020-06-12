@@ -2,7 +2,8 @@
 
 @property(nonatomic, strong) NSString *databasePath;
 
-- (void) saveData: (NSDictionary *) event;
+- (void) saveEventData: (NSDictionary *) event;
 - (void) deleteAllData;
+- (NSDictionary *) getSettingsData;
 
 @end
