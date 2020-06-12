@@ -57,6 +57,10 @@ export default class App extends Component {
   };
 
   startPoller = () => {
+    if (this._interval) {
+      clearInterval(this._interval);
+      this._interval = null;
+    }
     NearbyAPI.nearbyCheck();
     this._interval = setInterval(() => {
       NearbyAPI.nearbyCheck();

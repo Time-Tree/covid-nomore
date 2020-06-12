@@ -124,7 +124,11 @@ public class BLEAdvertiser {
     }
 
     public void startAdvertising() {
-        Log.e(TAG, "startAdvertising");
+        Log.d(TAG, "startAdvertising");
+        if (advertising) {
+            Log.d(TAG, "Advetising cannot start, already running");
+            return;
+        }
         mBluetoothManager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
         mBluetoothAdapter = mBluetoothManager.getAdapter();
 

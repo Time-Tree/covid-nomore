@@ -20,13 +20,12 @@ class NearbyAPI {
   }
 
   getEvents = async () => {
+    let db;
     try {
       if (this.lock) return;
       this.lock = true;
       let { sync } = store.getState().events;
-
       SQLite.enablePromise(true);
-      let db;
       if (Platform.OS === 'android') {
         db = await SQLite.openDatabase('NearbyEvents');
       } else {
@@ -79,12 +78,15 @@ class NearbyAPI {
           `DELETE FROM NearbyEvents WHERE timestamp <= ${lastSync}`
         );
       }
-      await db.close();
       this.lock = false;
     } catch (error) {
+      console.log('Nearby check failed', JSON.stringify(error));
       this.lock = false;
     } finally {
       this.lock = false;
+      if (db) {
+        await db.close();
+      }
     }
   };
 

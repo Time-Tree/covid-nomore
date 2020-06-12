@@ -58,6 +58,7 @@ public class BLEScanner {
         @RequiresApi(api = Build.VERSION_CODES.M)
         @Override
         public void onScanResult(int callbackType, final ScanResult result) {
+            Log.i(TAG, "onScanResult " + callbackType + " result " + result);
             ScanRecord record = result.getScanRecord();
             BluetoothDevice device = result.getDevice();
             if (record == null || device == null)
@@ -94,6 +95,7 @@ public class BLEScanner {
 
         @Override
         public void onConnectionStateChange(final BluetoothGatt gatt, final int status, final int newState) {
+            Log.d(TAG, "onConnectionStateChange status" + status + " newState: " + newState);
             if (status == GATT_SUCCESS) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
                     Log.i(TAG, "STATE_CONNECTED: " + gatt.getDevice().getAddress());
@@ -122,6 +124,7 @@ public class BLEScanner {
 
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+            Log.i(TAG, "onServicesDiscovered entered " + gatt.getDevice() + " status " + status);
             if (status == GATT_SUCCESS) {
                 Log.i(TAG, "onServicesDiscovered: " + gatt.getDevice().getAddress());
                 BluetoothGattService service = gatt.getService(UUID.fromString("a9ecdb59-974e-43f0-9d93-27d5dcb060d6"));
@@ -150,6 +153,7 @@ public class BLEScanner {
 
         @Override
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+            Log.d(TAG, "onCharacteristicRead " + gatt.getDevice() + " status " + status);
             if (status == GATT_SUCCESS) {
                 Log.i(TAG, "BLE FOUND" + characteristic.getUuid().toString());
             }
@@ -182,6 +186,7 @@ public class BLEScanner {
     }
 
     public void clearServicesCache() {
+        Log.d(TAG, "clearServicesCache");
         List<BluetoothGatt> toRemove = new ArrayList<>();
         for (BluetoothGatt gatt : gattConnections) {
             try {
