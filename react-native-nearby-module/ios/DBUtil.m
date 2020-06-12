@@ -23,7 +23,7 @@ static DBManager *myDBManager;
         @"formatDate": formattedDate,
         @"timestamp": timestampObj
     };
-    [myDBManager saveData: dict];
+    [myDBManager saveEventData: dict];
 }
 
 - (NSString *) getFormattedDate:(NSTimeInterval) timestamp {
@@ -35,6 +35,10 @@ static DBManager *myDBManager;
 
 - (void) deleteAllData {
     [myDBManager deleteAllData];
+}
+
+- (NSDictionary *) getSettingsData {
+    return [myDBManager getSettingsData];
 }
 
 @end

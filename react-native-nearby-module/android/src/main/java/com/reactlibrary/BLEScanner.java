@@ -42,12 +42,12 @@ public class BLEScanner {
     private static String TAG = "BLEScanner";
     private BluetoothLeScanner scanner;
     private boolean isStarted;
-    private NearbySql dbHelper;
+    private DBManager dbHelper;
     private Context context;
     private List<BluetoothGatt> gattConnections = new ArrayList<>();
     private HashMap<String, Long> deviceTimes = new HashMap<>();
 
-    public BLEScanner(final BluetoothAdapter bluetoothAdapter, NearbySql dbHelper, final Context context) {
+    public BLEScanner(final BluetoothAdapter bluetoothAdapter, DBManager dbHelper, final Context context) {
         this.dbHelper = dbHelper;
         this.context = context;
         scanner = bluetoothAdapter.getBluetoothLeScanner();
@@ -159,6 +159,7 @@ public class BLEScanner {
 
     public void start() {
         try {
+            Log.i(TAG, "start");
             ScanSettings.Builder settingsBuilder = new ScanSettings.Builder()
                     .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).setReportDelay(0);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -226,11 +227,11 @@ public class BLEScanner {
         try {
             SQLiteDatabase db = dbHelper.getWritableDatabase();
             ContentValues values = new ContentValues();
-            values.put(NearbyEventContract.EventEntry.COLUMN_NAME_EVENT_TYPE, eventType);
-            values.put(NearbyEventContract.EventEntry.COLUMN_NAME_MESSAGE, message);
-            values.put(NearbyEventContract.EventEntry.COLUMN_NAME_FORMAT_DATE, formatDate);
-            values.put(NearbyEventContract.EventEntry.COLUMN_NAME_TIMESTAMP, timestamp);
-            newRowId = db.insert(NearbyEventContract.EventEntry.TABLE_NAME, null, values);
+            values.put(EventContract.EventEntry.COLUMN_NAME_EVENT_TYPE, eventType);
+            values.put(EventContract.EventEntry.COLUMN_NAME_MESSAGE, message);
+            values.put(EventContract.EventEntry.COLUMN_NAME_FORMAT_DATE, formatDate);
+            values.put(EventContract.EventEntry.COLUMN_NAME_TIMESTAMP, timestamp);
+            newRowId = db.insert(EventContract.EventEntry.TABLE_NAME, null, values);
             db.close();
         } catch (Error e) {
             e.printStackTrace();

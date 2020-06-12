@@ -23,6 +23,10 @@ RCT_EXPORT_METHOD(startService: (nonnull NSString *)apiKey) {
     [service startService:apiKey];
 }
 
+RCT_EXPORT_METHOD(restartService) {
+    [service restartService];
+}
+
 RCT_REMAP_METHOD(getStatus,
                  getStatusWithResolver:(RCTPromiseResolveBlock)resolve
                  getStatusRejecter:(RCTPromiseRejectBlock)reject) {

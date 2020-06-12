@@ -37,13 +37,13 @@ public class BLEAdvertiser {
     private BluetoothGattServer mGattServer;
     private BluetoothLeAdvertiser advertiser;
     private AdvertiseCallback advertisingCallback;
-    private NearbySql dbHelper;
+    private DBManager dbHelper;
     private boolean advertising;
     private Context context;
     private final String appIdentifier = "a9ecdb59-974e-43f0-9d93-27d5dcb060d6";
     private String uniqueIdentifier;
 
-    public BLEAdvertiser(NearbySql dbHelper, Context context) {
+    public BLEAdvertiser(DBManager dbHelper, Context context) {
         super();
         this.context = context;
         this.dbHelper = dbHelper;
@@ -204,11 +204,11 @@ public class BLEAdvertiser {
         try {
             SQLiteDatabase db = dbHelper.getWritableDatabase();
             ContentValues values = new ContentValues();
-            values.put(NearbyEventContract.EventEntry.COLUMN_NAME_EVENT_TYPE, eventType);
-            values.put(NearbyEventContract.EventEntry.COLUMN_NAME_MESSAGE, message);
-            values.put(NearbyEventContract.EventEntry.COLUMN_NAME_FORMAT_DATE, formatDate);
-            values.put(NearbyEventContract.EventEntry.COLUMN_NAME_TIMESTAMP, timestamp);
-            newRowId = db.insert(NearbyEventContract.EventEntry.TABLE_NAME, null, values);
+            values.put(EventContract.EventEntry.COLUMN_NAME_EVENT_TYPE, eventType);
+            values.put(EventContract.EventEntry.COLUMN_NAME_MESSAGE, message);
+            values.put(EventContract.EventEntry.COLUMN_NAME_FORMAT_DATE, formatDate);
+            values.put(EventContract.EventEntry.COLUMN_NAME_TIMESTAMP, timestamp);
+            newRowId = db.insert(EventContract.EventEntry.TABLE_NAME, null, values);
             db.close();
         } catch (Error e) {
             e.printStackTrace();
