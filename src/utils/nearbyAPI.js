@@ -6,6 +6,7 @@ import eventsActions from '../redux/events/actions';
 import handshakeActions from '../redux/handshakes/actions';
 import settingsActions from '../redux/settings/actions';
 import keys from '../../keys';
+import { getCoarseProximity, approximateDistance } from './distance.js';
 
 class NearbyAPI {
   lock = false;
@@ -58,11 +59,18 @@ class NearbyAPI {
             ) {
               const { eventType } = event;
               const type = eventType.substring(0, eventType.indexOf('_'));
+              const [, rssi] = event.message.match(/RSSI: (-?\d+)/);
+              const approximatedDistance = approximateDistance(rssi);
+              const coarseProximity = getCoarseProximity(rssi);
+
               handshakes.push({
                 type,
                 time: parseInt(event.timestamp, 10),
                 formated: event.formatDate,
-                target: event.message.split('-')[0]
+                target: event.message.split('-')[0],
+                rssi,
+                approximatedDistance,
+                coarseProximity
               });
             }
           }

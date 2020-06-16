@@ -59,6 +59,13 @@ class HandshakesContainer extends React.Component {
           <Icon name="delete-outline" size={25} color="red" />
         </TouchableOpacity>
       </View>
+      <View>
+        <Text>RSSI: {item.rssi || 'N/A'}</Text>
+        <Text>Coarse proximity: {item.coarseProximity || 'N/A'}</Text>
+        <Text>
+          Approximated distance: {item.approximatedDistance || 'N/A'} m
+        </Text>
+      </View>
       {this.questions.map(q => (
         <View key={q.index} style={styles.question}>
           <Text>{q.text}</Text>
@@ -155,8 +162,8 @@ class HandshakesContainer extends React.Component {
           {pending ? (
             <ActivityIndicator />
           ) : (
-            <Text>{this.getTimestamp(lastUpdated)}</Text>
-          )}
+              <Text>{this.getTimestamp(lastUpdated)}</Text>
+            )}
           <Button title="Save data" onPress={this.addData} disabled={pending} />
         </View>
         <FlatList
