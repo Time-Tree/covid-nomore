@@ -59,19 +59,22 @@ class NearbyAPI {
             ) {
               const { eventType } = event;
               const type = eventType.substring(0, eventType.indexOf('_'));
-              const [, rssi] = event.message.match(/RSSI: (-?\d+)/);
-              const approximatedDistance = approximateDistance(rssi);
-              const coarseProximity = getCoarseProximity(rssi);
 
-              handshakes.push({
+              const handshake = {
                 type,
                 time: parseInt(event.timestamp, 10),
                 formated: event.formatDate,
-                target: event.message.split('-')[0],
-                rssi,
-                approximatedDistance,
-                coarseProximity
-              });
+                target: event.message.split('-')[0]
+              };
+
+              if (type === 'BLE') {
+                const [, rssi] = event.message.match(/RSSI: (-?\d+)/);
+                handshake.rssi = rssi;
+                handshake.approximatedDistance = approximateDistance(rssi);
+                handshake.coarseProximity = getCoarseProximity(rssi);
+              }
+
+              handshakes.push(handshake);
             }
           }
         }
