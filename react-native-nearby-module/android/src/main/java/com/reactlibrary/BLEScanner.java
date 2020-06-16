@@ -46,6 +46,7 @@ public class BLEScanner {
     private Context context;
     private List<BluetoothGatt> gattConnections = new ArrayList<>();
     private HashMap<String, Long> deviceTimes = new HashMap<>();
+    private HashMap<String, Integer> signalStrengths = new HashMap<String, Integer>();
 
     public BLEScanner(final BluetoothAdapter bluetoothAdapter, DBManager dbHelper, final Context context) {
         this.dbHelper = dbHelper;
@@ -75,6 +76,7 @@ public class BLEScanner {
             Log.i(TAG, "onScanResult: " + device.getAddress());
 
             deviceTimes.put(device.getAddress(), Calendar.getInstance().getTimeInMillis());
+            signalStrengths.put(device.getAddress(), result.getRssi());
 
             BluetoothGatt bluetoothGatt = result.getDevice().connectGatt(context, false, gattCallback, TRANSPORT_LE);
             gattConnections.add(bluetoothGatt);
@@ -126,7 +128,10 @@ public class BLEScanner {
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
             Log.i(TAG, "onServicesDiscovered entered " + gatt.getDevice() + " status " + status);
             if (status == GATT_SUCCESS) {
-                Log.i(TAG, "onServicesDiscovered: " + gatt.getDevice().getAddress());
+                BluetoothDevice device = gatt.getDevice();
+                Integer deviceRSSI = signalStrengths.get(device.getAddress());
+
+                Log.i(TAG, "onServicesDiscovered: " + device.getAddress());
                 BluetoothGattService service = gatt.getService(UUID.fromString("a9ecdb59-974e-43f0-9d93-27d5dcb060d6"));
                 Log.i(TAG, "service " + service.toString());
                 List<BluetoothGattCharacteristic> gattCharacteristics = service.getCharacteristics();
@@ -139,7 +144,12 @@ public class BLEScanner {
                         if (uuid.substring(18) == "-0000-000000000000") {
                             uuid = uuid.substring(0, 18);
                         }
-                        String message = "NM: " + gatt.getDevice().getName() + " ID: " + uuid;
+                        String message = "NM: " + device.getName() + " ID: " + uuid;
+
+                        if (deviceRSSI != null) {
+                            message += " RSSI: " + deviceRSSI;
+                        }
+
                         addEvent("BLE_FOUND", message);
                         Log.i(TAG, "BLE FOUND" + uuid);
                     }
