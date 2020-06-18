@@ -4,6 +4,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
 
@@ -13,6 +14,8 @@ import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.WritableMap;
+
+import androidx.annotation.RequiresApi;
 
 public class NearbyModule extends ReactContextBaseJavaModule implements ServiceConnection {
 
@@ -50,6 +53,12 @@ public class NearbyModule extends ReactContextBaseJavaModule implements ServiceC
         mBound = false;
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    @ReactMethod
+    public void startService() {
+        nearbyService.setCurrentApplication(getCurrentActivity().getApplication());
+    }
+
     @ReactMethod
     public void getStatus(Promise promise) {
         if (mBound) {
@@ -73,6 +82,7 @@ public class NearbyModule extends ReactContextBaseJavaModule implements ServiceC
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @ReactMethod
     public void restartService() {
         nearbyService.restartService();

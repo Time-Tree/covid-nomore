@@ -29,6 +29,13 @@ function reducer(state, action) {
       initialnearbyDuration: action.value.nearbyDuration
     };
   }
+  if (action.type === 'bleDuration' || action.type === 'nearbyDuration') {
+    return {
+      ...state,
+      [action.type]: action.value,
+      [`initial${action.type}`]: action.value
+    };
+  }
   return {
     ...state,
     [action.type]: action.value
@@ -69,7 +76,7 @@ export default function SettingsModal(props) {
     if (type.indexOf('Interval') > -1) {
       const method = type.substring(0, type.indexOf('Interval'));
       if (value < state[`${method}Duration`]) {
-        dispatch({ type: `initial${method}Duration`, value });
+        dispatch({ type: `${method}Duration`, value });
       }
     }
   };
@@ -84,7 +91,10 @@ export default function SettingsModal(props) {
 
   const saveHandler = () => {
     props.visibleHandler();
-    NearbyApi.saveSettings(state);
+    const data = { ...state };
+    delete data.initialbleDuration;
+    delete data.initialnearbyDuration;
+    NearbyApi.saveSettings(data);
   };
 
   const renderSlider = type => (

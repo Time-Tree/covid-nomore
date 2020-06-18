@@ -142,8 +142,8 @@ static int NEARBY_DURATION = 1 * 60.0;
 
 - (void) stopBLETimerTask {
     NSLog(@"stopBLETimerTask");
-    [myBLEScanner stopScan];
     [myBLEAdvertiser stopAdvertising];
+    [myBLEScanner stopScan];
     [self sendNotification:@"STOP BLE timer task"];
 }
 

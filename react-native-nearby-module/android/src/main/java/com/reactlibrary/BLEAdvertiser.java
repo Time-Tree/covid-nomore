@@ -110,6 +110,7 @@ public class BLEAdvertiser {
 
     private boolean addService() {
         Log.w(TAG, "BlePeripheral addService: " + this.appIdentifier);
+        mGattServer.clearServices();
         UUID SERVICE_UUID = UUID.fromString(this.appIdentifier);
         BluetoothGattService mGattService = new BluetoothGattService(SERVICE_UUID,
                 BluetoothGattService.SERVICE_TYPE_PRIMARY);
@@ -126,7 +127,7 @@ public class BLEAdvertiser {
     public void startAdvertising() {
         Log.d(TAG, "startAdvertising");
         if (advertising) {
-            Log.d(TAG, "Advetising cannot start, already running");
+            Log.d(TAG, "Advertising cannot start, already running");
             return;
         }
         mBluetoothManager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
@@ -160,7 +161,7 @@ public class BLEAdvertiser {
             } else {
                 AdvertiseSettings settings = new AdvertiseSettings.Builder()
                         .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY).setConnectable(true)
-                        .setTimeout(0).setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_MEDIUM).build();
+                        .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH).build();
 
                 AdvertiseData data = new AdvertiseData.Builder().setIncludeDeviceName(false)
                         .addServiceUuid(new ParcelUuid(UUID.fromString(this.appIdentifier))).build();
@@ -192,6 +193,7 @@ public class BLEAdvertiser {
             mGattServer.close();
         }
         if (mBluetoothAdapter != null && mBluetoothAdapter.isEnabled() && advertiser != null) {
+            advertising = false;
             advertiser.stopAdvertising(advertisingCallback);
         }
         addEvent("BLE_ADVERTISER", "Advertising stopped");

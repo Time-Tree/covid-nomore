@@ -1,32 +1,23 @@
 package com.reactlibrary;
 
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
+import android.app.Application;
 import android.bluetooth.BluetoothGatt;
-import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
-import android.bluetooth.BluetoothProfile;
-import android.bluetooth.le.BluetoothLeScanner;
-import android.bluetooth.le.ScanCallback;
-import android.bluetooth.le.ScanFilter;
-import android.bluetooth.le.ScanRecord;
-import android.bluetooth.le.ScanResult;
-import android.bluetooth.le.ScanSettings;
 import android.content.ContentValues;
-import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Build;
-import android.os.Looper;
-import android.os.ParcelUuid;
-import android.os.Handler;
 import android.util.Log;
 
-import java.lang.reflect.Method;
+import com.clj.fastble.BleManager;
+import com.clj.fastble.callback.BleGattCallback;
+import com.clj.fastble.callback.BleScanCallback;
+import com.clj.fastble.data.BleDevice;
+import com.clj.fastble.exception.BleException;
+import com.clj.fastble.scan.BleScanRuleConfig;
+
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -34,194 +25,141 @@ import java.util.UUID;
 
 import androidx.annotation.RequiresApi;
 
-import static android.bluetooth.BluetoothDevice.TRANSPORT_LE;
-import static android.bluetooth.BluetoothGatt.GATT_SUCCESS;
-
 @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 public class BLEScanner {
     private static String TAG = "BLEScanner";
-    private BluetoothLeScanner scanner;
-    private boolean isStarted;
+    private boolean isStarted = false;
+    private boolean isScanning = false;
     private DBManager dbHelper;
-    private Context context;
-    private List<BluetoothGatt> gattConnections = new ArrayList<>();
-    private HashMap<String, Long> deviceTimes = new HashMap<>();
+    private HashMap<String, Long> foundDevices = new HashMap<>();
+    private BleManager bleManager = null;
+    private Application currentApplication = null;
+    private int pendingConnections = 0;
 
-    public BLEScanner(final BluetoothAdapter bluetoothAdapter, DBManager dbHelper, final Context context) {
+    public BLEScanner(DBManager dbHelper) {
         this.dbHelper = dbHelper;
-        this.context = context;
-        scanner = bluetoothAdapter.getBluetoothLeScanner();
+        bleManager = BleManager.getInstance();
+    }
+
+    public void setCurrentApplication(Application application) {
+        currentApplication = application;
+        bleManager.init(application);
+        bleManager.enableLog(true).setReConnectCount(5, 300);
+        setScanSettings();
+    }
+
+    private void setScanSettings() {
+        UUID[] services = {UUID.fromString("a9ecdb59-974e-43f0-9d93-27d5dcb060d6")};
+        BleScanRuleConfig scanRuleConfig = new BleScanRuleConfig.Builder().setServiceUuids(services)
+                .build();
+        bleManager.initScanRule(scanRuleConfig);
+    }
+
+    public void startScanner() {
+        if (isStarted)
+            return;
+        addEvent("BLE_SCANNER", "Scanning started");
+        isStarted = true;
+        startScan();
+    }
+
+    public void stopScanner() {
+        bleManager.cancelScan();
+        addEvent("BLE_SCANNER", "Scanning stopped");
         isStarted = false;
     }
 
-    private final ScanCallback scanCallback = new ScanCallback() {
-        @RequiresApi(api = Build.VERSION_CODES.M)
+    public void startScan() {
+        Log.i(TAG, "start");
+        if (currentApplication == null)
+            return;
+        if (isScanning)
+            return;
+        bleManager.scan(scanCallback);
+
+    }
+
+    BleScanCallback scanCallback = new BleScanCallback() {
+
         @Override
-        public void onScanResult(int callbackType, final ScanResult result) {
-            Log.i(TAG, "onScanResult " + callbackType + " result " + result);
-            ScanRecord record = result.getScanRecord();
-            BluetoothDevice device = result.getDevice();
-            if (record == null || device == null)
-                return;
-
-            Long deviceTime = deviceTimes.get(device.getAddress());
-            if (deviceTime == null)
-                deviceTime = 1L;
-
-            long newTimestamp = Calendar.getInstance().getTimeInMillis() / 10000 * 10000;
-            long trimTime = deviceTime / 10000 * 10000;
-            if (newTimestamp == trimTime)
-                return;
-            Log.i(TAG, "onScanResult: " + device.getAddress());
-
-            deviceTimes.put(device.getAddress(), Calendar.getInstance().getTimeInMillis());
-
-            BluetoothGatt bluetoothGatt = result.getDevice().connectGatt(context, false, gattCallback, TRANSPORT_LE);
-            gattConnections.add(bluetoothGatt);
+        public void onScanStarted(boolean success) {
+            Log.i(TAG, "onScanStarted " + success);
+            isScanning = success;
         }
 
         @Override
-        public void onScanFailed(int errorCode) {
-            super.onScanFailed(errorCode);
-            Log.i(TAG, "onScanFailed error: " + errorCode);
-            addEvent("BLE_SCANNER_ERROR", String.valueOf(errorCode));
-            if (errorCode == SCAN_FAILED_ALREADY_STARTED) {
-                restart();
-            }
+        public void onScanning(BleDevice bleDevice) {
+            Log.i(TAG, "onScanning " + bleDevice.getName() + " " + bleDevice.getMac());
         }
-    };
-
-    private final BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
 
         @Override
-        public void onConnectionStateChange(final BluetoothGatt gatt, final int status, final int newState) {
-            Log.d(TAG, "onConnectionStateChange status" + status + " newState: " + newState);
-            if (status == GATT_SUCCESS) {
-                if (newState == BluetoothProfile.STATE_CONNECTED) {
-                    Log.i(TAG, "STATE_CONNECTED: " + gatt.getDevice().getAddress());
-                    // gatt.discoverServices();
-                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                        @Override
-                        public void run() {
-                            boolean ans = gatt.discoverServices();
-                            Log.d(TAG, "Discover Services started: " + ans);
-                        }
-                    });
-                } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                    Log.i(TAG, "STATE_DISCONNECTED: " + gatt.getDevice().getName());
-                    gatt.close();
+        public void onScanFinished(List<BleDevice> scanResultList) {
+            Log.i(TAG, "onScanFinished " + scanResultList.size());
+            for (BleDevice bleDevice : scanResultList) {
+                Log.i(TAG, "onScanFinished " + bleDevice.getName() + " " + bleDevice.getMac());
+                Long storedDevice = foundDevices.get(bleDevice.getMac());
+                if (storedDevice != null) {
+                    Log.i(TAG, "already found " + bleDevice.getKey());
                 } else {
-                    Log.i(TAG, "STATE: " + newState);
-                    gatt.disconnect();
+                    Log.i(TAG, "CONNECT AICI ");
+                    pendingConnections++;
+                    bleManager.connect(bleDevice.getMac(), connectCallback);
                 }
-            } else {
-                Log.i(TAG, "STATUS: " + status);
-                deviceTimes.remove(gatt.getDevice().getAddress());
-                gatt.close();
-                gatt.disconnect();
+            }
+            Log.i(TAG, "onScanFinished pendingConnections: " + pendingConnections);
+            if (pendingConnections == 0) {
+                isScanning = false;
+                startScan();
             }
         }
-
-        @Override
-        public void onServicesDiscovered(BluetoothGatt gatt, int status) {
-            Log.i(TAG, "onServicesDiscovered entered " + gatt.getDevice() + " status " + status);
-            if (status == GATT_SUCCESS) {
-                Log.i(TAG, "onServicesDiscovered: " + gatt.getDevice().getAddress());
-                BluetoothGattService service = gatt.getService(UUID.fromString("a9ecdb59-974e-43f0-9d93-27d5dcb060d6"));
-                Log.i(TAG, "service " + service.toString());
-                List<BluetoothGattCharacteristic> gattCharacteristics = service.getCharacteristics();
-                Log.i(TAG, "gattCharacteristics size" + gattCharacteristics.size());
-                for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
-                    Log.i(TAG, "gattCharacteristic uuid" + gattCharacteristic.getUuid());
-                    if (gattCharacteristic.getUuid() != null) {
-                        String uuid = gattCharacteristic.getUuid().toString();
-                        Log.i(TAG, "uuid.substring(18): " + uuid.substring(18));
-                        if (uuid.substring(18) == "-0000-000000000000") {
-                            uuid = uuid.substring(0, 18);
-                        }
-                        String message = "NM: " + gatt.getDevice().getName() + " ID: " + uuid;
-                        addEvent("BLE_FOUND", message);
-                        Log.i(TAG, "BLE FOUND" + uuid);
-                    }
-                }
-            } else {
-                Log.i(TAG, "onServicesDiscovered: failed" + status);
-            }
-            Log.i(TAG, "onServicesDiscovered: DISCONNECT");
-            gatt.disconnect();
-        }
-
-        @Override
-        public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-            Log.d(TAG, "onCharacteristicRead " + gatt.getDevice() + " status " + status);
-            if (status == GATT_SUCCESS) {
-                Log.i(TAG, "BLE FOUND" + characteristic.getUuid().toString());
-            }
-        }
-
     };
 
-    public void start() {
-        try {
-            Log.i(TAG, "start");
-            ScanSettings.Builder settingsBuilder = new ScanSettings.Builder()
-                    .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).setReportDelay(0);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                settingsBuilder.setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
-                        .setNumOfMatches(ScanSettings.MATCH_NUM_MAX_ADVERTISEMENT)
-                        .setMatchMode(ScanSettings.MATCH_MODE_AGGRESSIVE);
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                settingsBuilder.setLegacy(true);
-            }
-            ScanFilter filter = new ScanFilter.Builder()
-                    .setServiceUuid(ParcelUuid.fromString("a9ecdb59-974e-43f0-9d93-27d5dcb060d6")).build();
-            scanner.startScan(Collections.singletonList(filter), settingsBuilder.build(), scanCallback);
-            isStarted = true;
-            Log.i(TAG, "Scan started");
-            addEvent("BLE_SCANNER", "Scanning started");
-        } catch (Exception e) {
-            addEvent("BLE_SCANNER_ERROR", "Start advertising failed: " + e.getMessage());
-            Log.e(TAG, "Start advertising failed: " + e.getMessage());
+    private BleGattCallback connectCallback = new BleGattCallback() {
+        @Override
+        public void onStartConnect() {
+            Log.i(TAG, "onStartConnect ");
         }
-    }
 
-    public void clearServicesCache() {
-        Log.d(TAG, "clearServicesCache");
-        List<BluetoothGatt> toRemove = new ArrayList<>();
-        for (BluetoothGatt gatt : gattConnections) {
-            try {
-                Method refreshMethod = gatt.getClass().getMethod("refresh");
-                refreshMethod.invoke(gatt);
-                toRemove.add(gatt);
-            } catch (Exception e) {
-                Log.e(TAG, "ERROR: Could not invoke refresh method");
-            }
+        @Override
+        public void onConnectFail(BleDevice bleDevice, BleException exception) {
+            Log.i(TAG, "onConnectFail " + bleDevice.getName() + " " + bleDevice.getMac());
+            Log.i(TAG, "onConnectFail exception " + exception.getDescription() + " " + exception.getCode());
+            checkPendingConections();
         }
-        gattConnections.removeAll(toRemove);
-    }
 
-    public void stop() {
-        try {
-            scanner.stopScan(scanCallback);
-            isStarted = false;
-            Log.i(TAG, "Scan stopped");
-            addEvent("BLE_SCANNER", "Scanning stopped");
-        } catch (Exception e) {
-            Log.e(TAG, "Scan stop " + e.getMessage());
-        }
-    }
-
-    public void restart() {
-        try {
-            Log.i(TAG, "Scan restarted");
-            if (isStarted) {
-                stop();
-                clearServicesCache();
+        @Override
+        public void onConnectSuccess(BleDevice bleDevice, BluetoothGatt gatt, int status) {
+            Log.i(TAG, "onConnectSuccess " + bleDevice.getName() + " " + bleDevice.getMac());
+            BluetoothGattService service = gatt.getService(UUID.fromString("a9ecdb59-974e-43f0-9d93-27d5dcb060d6"));
+            List<BluetoothGattCharacteristic> characteristics = service.getCharacteristics();
+            for (BluetoothGattCharacteristic characteristic : characteristics) {
+                Log.i(TAG, "characteristic " + characteristic.getUuid());
+                String uuid = characteristic.getUuid().toString();
+                if (uuid.substring(18).equals("-0000-000000000000")) {
+                    uuid = uuid.substring(0, 18);
+                }
+                String message = "NM: " + gatt.getDevice().getName() + " ID: " + uuid;
+                addEvent("BLE_FOUND", message);
+                foundDevices.put(bleDevice.getMac(), Calendar.getInstance().getTimeInMillis());
             }
-            start();
-        } catch (Exception e) {
-            Log.e(TAG, "Restart error " + e.toString());
+            bleManager.disconnect(bleDevice);
+            checkPendingConections();
+        }
+
+        @Override
+        public void onDisConnected(boolean isActiveDisConnected, BleDevice device, BluetoothGatt gatt, int status) {
+            Log.i(TAG, "onDisConnected " + device.getName() + " " + device.getMac());
+            checkPendingConections();
+        }
+    };
+
+    synchronized void checkPendingConections() {
+        if (pendingConnections > 0) {
+            pendingConnections--;
+        }
+        if (pendingConnections == 0) {
+            isScanning = false;
+            startScan();
         }
     }
 

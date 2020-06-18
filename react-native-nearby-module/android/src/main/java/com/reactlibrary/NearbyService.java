@@ -1,5 +1,6 @@
 package com.reactlibrary;
 
+import android.app.Application;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -27,6 +28,7 @@ import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
+@RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
 public class NearbyService extends Service {
 
     static String TAG = "Service";
@@ -58,7 +60,6 @@ public class NearbyService extends Service {
         }
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     public void onCreate() {
         Log.i(TAG, "onCreate NEARBY SERVICE");
@@ -68,10 +69,9 @@ public class NearbyService extends Service {
         startForeground(NOTIFICATION_CHANNEL_ID,
                 buildForegroundNotification("CovidNoMore", "Background Service", true));
         Context context = this.getApplicationContext();
-        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         dbHelper = new DBManager(context);
         if (checkBluetooth()) {
-            mBLEScanner = new BLEScanner(bluetoothAdapter, dbHelper, context);
+            mBLEScanner = new BLEScanner(dbHelper);
             mBLEAdvertiser = new BLEAdvertiser(dbHelper, context);
         } else {
             Log.e(TAG, "Bluetooth init error");
@@ -86,8 +86,12 @@ public class NearbyService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
-        startTimers();
         return START_STICKY;
+    }
+
+    public void setCurrentApplication(Application application) {
+        mBLEScanner.setCurrentApplication(application);
+        startTimers();
     }
 
     private Boolean checkBluetooth() {
@@ -139,13 +143,18 @@ public class NearbyService extends Service {
     }
 
     private void stopAllProcess() {
+        Log.i(TAG, "stopAllProcess");
         if (nearbyStartTimer != null) {
             nearbyStartTimer.cancel();
             nearbyStartTimer.purge();
+            nearbyManager.unsubscribe();
+            nearbyManager.unpublish();
         }
         if (bleStartTimer != null) {
             bleStartTimer.cancel();
             bleStartTimer.purge();
+            mBLEAdvertiser.stopAdvertising();
+            mBLEScanner.stopScanner();
         }
         nearbyStopHandler.removeCallbacksAndMessages(null);
         bleStopHandler.removeCallbacksAndMessages(null);
@@ -159,6 +168,7 @@ public class NearbyService extends Service {
     }
 
     private void startNearbyTimerTask() {
+        Log.i(TAG, "startNearbyTimerTask");
         nearbyStartTimer = new Timer();
         TimerTask startNearbyTimerTask = new TimerTask() {
             @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
@@ -182,6 +192,7 @@ public class NearbyService extends Service {
     }
 
     private void startBLETimerTask() {
+        Log.i(TAG, "startBLETimerTask");
         bleStartTimer = new Timer();
         TimerTask startBLETimerTask = new TimerTask() {
             @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
@@ -190,7 +201,7 @@ public class NearbyService extends Service {
                     mBLEAdvertiser.startAdvertising();
                 }
                 if (mBLEScanner != null) {
-                    mBLEScanner.start();
+                    mBLEScanner.startScanner();
                 }
                 bleStopHandler.postDelayed(new Runnable() {
                     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
@@ -198,8 +209,7 @@ public class NearbyService extends Service {
                     public void run() {
                         Log.i(TAG, "stopBLETimerTask");
                         mBLEAdvertiser.stopAdvertising();
-                        mBLEScanner.stop();
-                        mBLEScanner.clearServicesCache();
+                        mBLEScanner.stopScanner();
                     }
                 }, BLE_DURATION);
             }

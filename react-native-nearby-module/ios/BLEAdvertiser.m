@@ -61,13 +61,13 @@ static NSString *uniqueIdentifier;
         NSString *message = [NSString stringWithFormat: @"Start advertising failed: CoreBluetooth BLE state is unauthorized."];
         [myDBUtil createEvent: @"BLE_ADVERTISER_ERROR" withMessage:message];
     }
-    [self.peripheralManager removeAllServices];
     if(self.peripheralManager.isAdvertising) {
         NSLog(@"Already advertising");
         NSString *message = [NSString stringWithFormat: @"Start advertising failed: Already advertising."];
-        [myDBUtil createEvent: @"BLE_ADVERTISER_ERROR" withMessage:message];
+//        [myDBUtil createEvent: @"BLE_ADVERTISER_ERROR" withMessage:message];
         return;
     }
+    [self.peripheralManager removeAllServices];
     CBMutableCharacteristic *characteristic = [[CBMutableCharacteristic alloc] initWithType:[CBUUID UUIDWithString:uniqueIdentifier]
                                                                                  properties:CBCharacteristicPropertyRead
                                                                                       value:nil
