@@ -1,8 +1,18 @@
 import React, { useEffect, useReducer } from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import {
+  Modal,
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Platform
+} from 'react-native';
 import Slider from '@react-native-community/slider';
 import NavbarComponent from './components/NavbarComponent';
 import NearbyApi from '../utils/nearbyAPI';
+
+const isAndroid = Platform.OS === 'android';
 
 const initialState = {
   bleInterval: 5,
@@ -13,7 +23,11 @@ const initialState = {
 
 function reducer(state, action) {
   if (action.type === 'initialState') {
-    return action.value;
+    return {
+      ...action.value,
+      initialbleDuration: action.value.bleDuration,
+      initialnearbyDuration: action.value.nearbyDuration
+    };
   }
   return {
     ...state,
@@ -24,10 +38,26 @@ function reducer(state, action) {
 export default function SettingsModal(props) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const inputs = {
-    bleInterval: 'BLE Interval',
-    bleDuration: 'BLE Duration',
-    nearbyInterval: 'Nearby Interval',
-    nearbyDuration: 'Nearby Duration'
+    bleInterval: {
+      name: 'BLE Interval',
+      description:
+        'The BLE Interval represents the number of minutes between two consecutive BLE processes.'
+    },
+    bleDuration: {
+      name: 'BLE Duration',
+      description:
+        'The BLE duration is the duration of a BLE process expressed in minutes. (The duration of the BLE process must be less than or equal to the BLE interval.)'
+    },
+    nearbyInterval: {
+      name: 'Nearby Interval',
+      description:
+        'The Neraby Interval represents the number of minutes between two consecutive nearby processes.'
+    },
+    nearbyDuration: {
+      name: 'Nearby Duration',
+      description:
+        'The Nearby duration is the duration of a nearby process expressed in minutes. (The duration of the nearby process must be less than or equal to the nearby interval.)'
+    }
   };
 
   useEffect(() => {
@@ -39,7 +69,7 @@ export default function SettingsModal(props) {
     if (type.indexOf('Interval') > -1) {
       const method = type.substring(0, type.indexOf('Interval'));
       if (value < state[`${method}Duration`]) {
-        dispatch({ type: `${method}Duration`, value });
+        dispatch({ type: `initial${method}Duration`, value });
       }
     }
   };
@@ -60,7 +90,7 @@ export default function SettingsModal(props) {
   const renderSlider = type => (
     <View style={styles.sliderContainer}>
       <View style={styles.row}>
-        <Text style={styles.title}>{inputs[type]}:</Text>
+        <Text style={styles.title}>{inputs[type].name}:</Text>
         <View style={styles.valueContainer}>
           <Text style={styles.value}>{state[type]}</Text>
         </View>
@@ -70,14 +100,18 @@ export default function SettingsModal(props) {
         maximumValue={maxValue(type)}
         step={1}
         minimumTrackTintColor="darkblue"
+        thumbTintColor={isAndroid ? 'darkblue' : undefined}
         maximumTrackTintColor="lightgray"
         onValueChange={handler(type)}
-        value={state[type]}
+        value={state[`initial${type}`] || props.settings[type]}
         style={styles.slider}
       />
       <View style={styles.interval}>
         <Text style={styles.intervalValues}>1</Text>
         <Text style={styles.intervalValues}>{maxValue(type)}</Text>
+      </View>
+      <View style={styles.descriptionContainter}>
+        <Text style={styles.descriptionText}>{inputs[type].description}</Text>
       </View>
     </View>
   );
@@ -87,6 +121,7 @@ export default function SettingsModal(props) {
       visible={props.visible}
       animationType="slide"
       onRequestClose={props.visibleHandler}
+      statusBarTranslucent
     >
       <View style={styles.container}>
         <NavbarComponent
@@ -95,12 +130,12 @@ export default function SettingsModal(props) {
           iconName="close"
           rightButtonHandler={props.visibleHandler}
         />
-        <View style={styles.content}>
+        <ScrollView style={styles.content}>
           {Object.keys(inputs).map(type => renderSlider(type))}
           <TouchableOpacity onPress={saveHandler} style={styles.saveButton}>
             <Text style={styles.saveText}>Save</Text>
           </TouchableOpacity>
-        </View>
+        </ScrollView>
       </View>
     </Modal>
   );
@@ -116,7 +151,9 @@ const styles = StyleSheet.create({
   sliderContainer: {
     marginVertical: 5
   },
-  slider: {},
+  slider: {
+    height: 50
+  },
   row: {
     flexDirection: 'row',
     marginVertical: 10,
@@ -127,6 +164,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold'
   },
   valueContainer: {
+    marginRight: 2,
     borderRadius: 10,
     padding: 10,
     backgroundColor: '#f7f8fc',
@@ -171,5 +209,14 @@ const styles = StyleSheet.create({
   saveText: {
     color: 'white',
     fontWeight: '600'
+  },
+  descriptionContainter: {
+    marginTop: 10,
+    paddingBottom: 10,
+    borderBottomColor: 'lightgray',
+    borderBottomWidth: 0.5
+  },
+  descriptionText: {
+    color: 'gray'
   }
 });

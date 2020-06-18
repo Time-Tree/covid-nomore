@@ -10,8 +10,12 @@ import keys from '../../keys';
 class NearbyAPI {
   lock = false;
 
-  startService() {
-    NearbyModule.startService(keys.NEARBY_KEY);
+  startService(needKey) {
+    if (needKey) {
+      NearbyModule.startService(keys.NEARBY_KEY);
+    } else {
+      NearbyModule.startService();
+    }
   }
 
   nearbyCheck() {
@@ -107,6 +111,8 @@ class NearbyAPI {
 
   saveSettings = async data => {
     try {
+      delete data.bleProcess;
+      delete data.nearbyProcess;
       SQLite.enablePromise(true);
       let db;
       if (Platform.OS === 'android') {

@@ -5,7 +5,7 @@ static DBUtil *myDBUtil;
 static NSString * const appIdentifier = @"a9ecdb59-974e-43f0-9d93-27d5dcb060d6";
 static NSString *uniqueIdentifier;
 static CBPeripheral * discoveredPeripheral;
-static NSMutableDictionary *deviceTimes;
+static NSMutableDictionary *foundDevices;
 
 @implementation BLEScanner
 
@@ -15,7 +15,7 @@ static NSMutableDictionary *deviceTimes;
     [self centralManagerDidUpdateState:self.centralManager];
     myDBUtil = [[DBUtil alloc] init];
     uniqueIdentifier = [[[UIDevice currentDevice] identifierForVendor] UUIDString];
-    deviceTimes = [[NSMutableDictionary alloc] init];
+    foundDevices = [[NSMutableDictionary alloc] init];
     return self;
 }
 
@@ -66,24 +66,20 @@ static NSMutableDictionary *deviceTimes;
 
 - (void) stopScan {
     NSLog(@"Scanning stopped");
-    [myDBUtil createEvent: @"BLE_SCANNER" withMessage:@"Scanning stopped"];
     [self.centralManager stopScan];
+    [foundDevices removeAllObjects];
+    [myDBUtil createEvent: @"BLE_SCANNER" withMessage:@"Scanning stopped"];
 }
 
 
 - (void)centralManager:(CBCentralManager *)central didDiscoverPeripheral:(CBPeripheral *)peripheral
       advertisementData:(NSDictionary *)advertisementData RSSI:(NSNumber *)RSSI {
-    NSNumber *deviceTime = [deviceTimes objectForKey:peripheral.identifier];
-    if (!deviceTime) {
-        deviceTime = [NSNumber numberWithLong:1];
+    NSNumber *deviceTime = [foundDevices objectForKey:peripheral.identifier];
+    if (deviceTime) {
+        return;
     }
-    
     long timestamp = [[NSDate date] timeIntervalSince1970];
-    long newTimestamp = timestamp / 10 * 10;
-    long trimTime = [deviceTime longValue] / 10 * 10;
-    if (newTimestamp == trimTime) return;
-    
-    [deviceTimes setObject:[NSNumber numberWithLong:timestamp] forKey:peripheral.identifier];
+    [foundDevices setObject:[NSNumber numberWithLong:timestamp] forKey:peripheral.identifier];
     discoveredPeripheral = peripheral;
     [central connectPeripheral:peripheral options:nil];
 }
@@ -99,10 +95,15 @@ static NSMutableDictionary *deviceTimes;
 
 - (void) centralManager:(CBCentralManager *)central didFailToConnectPeripheral:(CBPeripheral *)peripheral error:(NSError *)error {
     NSLog(@"didFailToConnectPeripheral peripheral:  %@ identifier: %@", peripheral.name, peripheral.identifier);
+    [foundDevices removeObjectForKey:peripheral.identifier];
 }
 
 - (void) peripheral:(CBPeripheral *)peripheral didDiscoverServices:(NSError *)error {
     NSLog(@"didDiscoverServices services:  %@ identifier: %@ services: %@", peripheral.services, peripheral.identifier, peripheral.services);
+    if (error != nil) {
+        [foundDevices removeObjectForKey:peripheral.identifier];
+        return;
+    }
     for (CBService *service in peripheral.services) {
         if( [service.UUID isEqual:[CBUUID UUIDWithString:appIdentifier]]) {
             if(service.characteristics)
@@ -114,6 +115,10 @@ static NSMutableDictionary *deviceTimes;
 }
 
 - (void)peripheral:(CBPeripheral *)peripheral didDiscoverCharacteristicsForService:(CBService *)service error:(NSError *)error {
+    if (error != nil) {
+        [foundDevices removeObjectForKey:peripheral.identifier];
+        return;
+    }
     for (CBCharacteristic *characteristic in service.characteristics) {
         NSLog(@"Discovered characteristic %@", characteristic);
         NSString *uuid = [NSString stringWithFormat: @"%@", characteristic.UUID];

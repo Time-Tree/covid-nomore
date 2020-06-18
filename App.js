@@ -72,8 +72,9 @@ export default class App extends Component {
     this.startPoller();
     if (Platform.OS === 'android') {
       this.requestPermissions();
+      NearbyAPI.startService(false);
     } else {
-      NearbyAPI.startService();
+      NearbyAPI.startService(true);
     }
   };
 
