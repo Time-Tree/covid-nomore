@@ -6,6 +6,7 @@ import eventsActions from '../redux/events/actions';
 import handshakeActions from '../redux/handshakes/actions';
 import settingsActions from '../redux/settings/actions';
 import keys from '../../keys';
+import { getCoarseProximity, approximateDistance } from './distance.js';
 
 class NearbyAPI {
   lock = false;
@@ -62,12 +63,19 @@ class NearbyAPI {
             ) {
               const { eventType } = event;
               const type = eventType.substring(0, eventType.indexOf('_'));
-              handshakes.push({
+              const handshake = {
                 type,
                 time: parseInt(event.timestamp, 10),
                 formated: event.formatDate,
                 target: event.message.split('-')[0]
-              });
+              };
+              if (type === 'BLE') {
+                const [, rssi] = event.message.match(/RSSI: (-?\d+)/);
+                handshake.rssi = rssi;
+                handshake.approximatedDistance = approximateDistance(rssi);
+                handshake.coarseProximity = getCoarseProximity(rssi);
+              }
+              handshakes.push(handshake);
             }
           }
         }
@@ -124,7 +132,7 @@ class NearbyAPI {
         });
       }
       console.log('Saving settings data', data);
-      let query = `UPDATE Settings SET `;
+      let query = 'UPDATE Settings SET ';
       const labels = Object.keys(data);
       labels.map(async (key, index) => {
         query += `${key} = ${data[key]}`;
@@ -154,7 +162,7 @@ class NearbyAPI {
       console.log('Getting setting data');
       let settings = {};
       const result = await db.executeSql(
-        `SELECT * FROM Settings WHERE _ID = 1`
+        'SELECT * FROM Settings WHERE _ID = 1'
       );
       if (result[0]) {
         const res = result[0];

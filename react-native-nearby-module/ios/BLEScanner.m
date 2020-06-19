@@ -6,6 +6,7 @@ static NSString * const appIdentifier = @"a9ecdb59-974e-43f0-9d93-27d5dcb060d6";
 static NSString *uniqueIdentifier;
 static CBPeripheral * discoveredPeripheral;
 static NSMutableDictionary *foundDevices;
+static NSMutableDictionary *connectedDevices;
 
 @implementation BLEScanner
 
@@ -16,6 +17,7 @@ static NSMutableDictionary *foundDevices;
     myDBUtil = [[DBUtil alloc] init];
     uniqueIdentifier = [[[UIDevice currentDevice] identifierForVendor] UUIDString];
     foundDevices = [[NSMutableDictionary alloc] init];
+    connectedDevices = [[NSMutableDictionary alloc] init];
     return self;
 }
 
@@ -58,7 +60,7 @@ static NSMutableDictionary *foundDevices;
     [self.centralManager stopScan];
     NSLog(@"Scanning started");
     NSDictionary *options = [NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithBool:YES], CBCentralManagerScanOptionAllowDuplicatesKey, nil];
-    NSDictionary *scanOptions = [NSDictionary dictionaryWithObject:[NSNumber numberWithBool:NO] forKey:CBCentralManagerScanOptionAllowDuplicatesKey];
+//    NSDictionary *scanOptions = [NSDictionary dictionaryWithObject:[NSNumber numberWithBool:NO] forKey:CBCentralManagerScanOptionAllowDuplicatesKey];
     [self.centralManager scanForPeripheralsWithServices:@[[CBUUID UUIDWithString:appIdentifier]]
                                                 options:options];
     [myDBUtil createEvent: @"BLE_SCANNER" withMessage:@"Scanning started"];
@@ -126,8 +128,8 @@ static NSMutableDictionary *foundDevices;
         if([substr isEqual: @"-0000-000000000000"]) {
             uuid = [uuid substringToIndex:18];
         }
-        NSString *messageString = [NSString stringWithFormat: @"NM: %@, ID: %@", peripheral.name, uuid];
-        [myDBUtil createEvent: @"BLE_FOUND" withMessage:messageString];
+        [connectedDevices setObject:[NSString stringWithFormat: @"NM: %@, ID: %@", peripheral.name, uuid] forKey:peripheral.identifier];
+        [peripheral readRSSI];
 //        [self.centralManager cancelPeripheralConnection:peripheral];
 //        discoveredPeripheral = nil;
     }
@@ -139,6 +141,16 @@ static NSMutableDictionary *foundDevices;
         [self peripheral:peripheral didDiscoverServices:nil];
     else
         [peripheral discoverServices:@[[CBUUID UUIDWithString:appIdentifier]]];
+}
+
+- (void)peripheral:(CBPeripheral *)peripheral didReadRSSI:(NSNumber *)RSSI error:(NSError *)error {
+    NSLog(@"------> didReadRSSI RSSI:  %@ identifier: %@", RSSI, peripheral.identifier);
+    NSString *messageString = [connectedDevices objectForKey:peripheral.identifier];
+    if(error == nil) {
+        messageString = [NSString stringWithFormat: @"%@, RSSI: %@", messageString, RSSI];
+    }
+    [myDBUtil createEvent: @"BLE_FOUND" withMessage:messageString];
+    [connectedDevices removeObjectForKey:peripheral.identifier];
 }
 
 @end

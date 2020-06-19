@@ -32,6 +32,7 @@ public class BLEScanner {
     private boolean isScanning = false;
     private DBManager dbHelper;
     private HashMap<String, Long> foundDevices = new HashMap<>();
+    private HashMap<String, Integer> signalStrengths = new HashMap<String, Integer>();
     private BleManager bleManager = null;
     private Application currentApplication = null;
     private int pendingConnections = 0;
@@ -50,8 +51,7 @@ public class BLEScanner {
 
     private void setScanSettings() {
         UUID[] services = {UUID.fromString("a9ecdb59-974e-43f0-9d93-27d5dcb060d6")};
-        BleScanRuleConfig scanRuleConfig = new BleScanRuleConfig.Builder().setServiceUuids(services)
-                .build();
+        BleScanRuleConfig scanRuleConfig = new BleScanRuleConfig.Builder().setServiceUuids(services).build();
         bleManager.initScanRule(scanRuleConfig);
     }
 
@@ -101,9 +101,10 @@ public class BLEScanner {
                 if (storedDevice != null) {
                     Log.i(TAG, "already found " + bleDevice.getKey());
                 } else {
-                    Log.i(TAG, "CONNECT AICI ");
                     pendingConnections++;
                     bleManager.connect(bleDevice.getMac(), connectCallback);
+                    Log.i(TAG, "-----> deviceRSSI " + bleDevice.getRssi());
+                    signalStrengths.put(bleDevice.getMac(), bleDevice.getRssi());
                 }
             }
             Log.i(TAG, "onScanFinished pendingConnections: " + pendingConnections);
@@ -129,7 +130,7 @@ public class BLEScanner {
 
         @Override
         public void onConnectSuccess(BleDevice bleDevice, BluetoothGatt gatt, int status) {
-            Log.i(TAG, "onConnectSuccess " + bleDevice.getName() + " " + bleDevice.getMac());
+            Log.i(TAG, "-----> onConnectSuccess " + bleDevice.getName() + " " + bleDevice.getMac());
             BluetoothGattService service = gatt.getService(UUID.fromString("a9ecdb59-974e-43f0-9d93-27d5dcb060d6"));
             List<BluetoothGattCharacteristic> characteristics = service.getCharacteristics();
             for (BluetoothGattCharacteristic characteristic : characteristics) {
@@ -138,9 +139,19 @@ public class BLEScanner {
                 if (uuid.substring(18).equals("-0000-000000000000")) {
                     uuid = uuid.substring(0, 18);
                 }
-                String message = "NM: " + gatt.getDevice().getName() + " ID: " + uuid;
+                String message = "";
+                if (bleDevice.getName() != null) {
+                    message += "NM: " + bleDevice.getName() + ",";
+                }
+                message += " ID: " + uuid;
+                String macAddress = bleDevice.getMac();
+                Integer deviceRSSI = signalStrengths.get(macAddress);
+                if (deviceRSSI != null) {
+                    message += ", RSSI: " + deviceRSSI;
+                    signalStrengths.remove(macAddress);
+                }
                 addEvent("BLE_FOUND", message);
-                foundDevices.put(bleDevice.getMac(), Calendar.getInstance().getTimeInMillis());
+                foundDevices.put(macAddress, Calendar.getInstance().getTimeInMillis());
             }
             bleManager.disconnect(bleDevice);
             checkPendingConections();

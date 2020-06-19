@@ -28,7 +28,7 @@ class HandshakesContainer extends React.Component {
     },
     {
       index: 'q2',
-      text: 'Q2: Do you where masks?',
+      text: 'Q2: Do you wear masks?',
       values: ['Yes', 'No']
     }
   ];
@@ -59,6 +59,15 @@ class HandshakesContainer extends React.Component {
           <Icon name="delete-outline" size={25} color="red" />
         </TouchableOpacity>
       </View>
+      {item.type === 'BLE' && (
+        <View>
+          <Text>RSSI: {item.rssi || 'N/A'}</Text>
+          <Text>Coarse proximity: {item.coarseProximity || 'N/A'}</Text>
+          <Text>
+            Approximated distance: {item.approximatedDistance || 'N/A'} m
+          </Text>
+        </View>
+      )}
       {this.questions.map(q => (
         <View key={q.index} style={styles.question}>
           <Text>{q.text}</Text>
