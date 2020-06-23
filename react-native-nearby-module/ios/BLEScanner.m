@@ -128,7 +128,13 @@ static NSMutableDictionary *connectedDevices;
         if([substr isEqual: @"-0000-000000000000"]) {
             uuid = [uuid substringToIndex:18];
         }
-        [connectedDevices setObject:[NSString stringWithFormat: @"NM: %@, ID: %@", peripheral.name, uuid] forKey:peripheral.identifier];
+        NSString *message;
+        if(peripheral.name!= nil) {
+            message = [NSString stringWithFormat: @"NM: %@, ID: %@", peripheral.name, uuid];
+        } else {
+            message = [NSString stringWithFormat: @"ID: %@", uuid];
+        }
+        [connectedDevices setObject:message forKey:peripheral.identifier];
         [peripheral readRSSI];
 //        [self.centralManager cancelPeripheralConnection:peripheral];
 //        discoveredPeripheral = nil;

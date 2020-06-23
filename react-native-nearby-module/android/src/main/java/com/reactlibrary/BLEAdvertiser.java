@@ -158,6 +158,8 @@ public class BLEAdvertiser {
             boolean addedFlag = this.addService();
             if (!addedFlag) {
                 Log.e(TAG, "add service failed");
+                addEvent("BLE_ADVERTISER_ERROR",
+                        "Start advertising failed: Add service failed.");
             } else {
                 AdvertiseSettings settings = new AdvertiseSettings.Builder()
                         .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY).setConnectable(true)
@@ -192,7 +194,7 @@ public class BLEAdvertiser {
         if (mGattServer != null) {
             mGattServer.close();
         }
-        if (mBluetoothAdapter != null && mBluetoothAdapter.isEnabled() && advertiser != null) {
+        if (mBluetoothAdapter != null && mBluetoothAdapter.isEnabled() && advertiser != null && advertisingCallback != null) {
             advertising = false;
             advertiser.stopAdvertising(advertisingCallback);
         }

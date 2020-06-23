@@ -67,6 +67,7 @@ public class BLEScanner {
         bleManager.cancelScan();
         addEvent("BLE_SCANNER", "Scanning stopped");
         isStarted = false;
+        foundDevices.clear();
     }
 
     public void startScan() {
@@ -99,7 +100,7 @@ public class BLEScanner {
                 Log.i(TAG, "onScanFinished " + bleDevice.getName() + " " + bleDevice.getMac());
                 Long storedDevice = foundDevices.get(bleDevice.getMac());
                 if (storedDevice != null) {
-                    Log.i(TAG, "already found " + bleDevice.getKey());
+                    Log.i(TAG, "already found " + bleDevice.getMac());
                 } else {
                     pendingConnections++;
                     bleManager.connect(bleDevice.getMac(), connectCallback);
@@ -132,26 +133,28 @@ public class BLEScanner {
         public void onConnectSuccess(BleDevice bleDevice, BluetoothGatt gatt, int status) {
             Log.i(TAG, "-----> onConnectSuccess " + bleDevice.getName() + " " + bleDevice.getMac());
             BluetoothGattService service = gatt.getService(UUID.fromString("a9ecdb59-974e-43f0-9d93-27d5dcb060d6"));
-            List<BluetoothGattCharacteristic> characteristics = service.getCharacteristics();
-            for (BluetoothGattCharacteristic characteristic : characteristics) {
-                Log.i(TAG, "characteristic " + characteristic.getUuid());
-                String uuid = characteristic.getUuid().toString();
-                if (uuid.substring(18).equals("-0000-000000000000")) {
-                    uuid = uuid.substring(0, 18);
+            if(service != null) {
+                List<BluetoothGattCharacteristic> characteristics = service.getCharacteristics();
+                for (BluetoothGattCharacteristic characteristic : characteristics) {
+                    Log.i(TAG, "characteristic " + characteristic.getUuid());
+                    String uuid = characteristic.getUuid().toString();
+                    if (uuid.substring(18).equals("-0000-000000000000")) {
+                        uuid = uuid.substring(0, 18);
+                    }
+                    String message = "";
+                    if (bleDevice.getName() != null) {
+                        message += "NM: " + bleDevice.getName() + ",";
+                    }
+                    message += " ID: " + uuid;
+                    String macAddress = bleDevice.getMac();
+                    Integer deviceRSSI = signalStrengths.get(macAddress);
+                    if (deviceRSSI != null) {
+                        message += ", RSSI: " + deviceRSSI;
+                        signalStrengths.remove(macAddress);
+                    }
+                    addEvent("BLE_FOUND", message);
+                    foundDevices.put(macAddress, Calendar.getInstance().getTimeInMillis());
                 }
-                String message = "";
-                if (bleDevice.getName() != null) {
-                    message += "NM: " + bleDevice.getName() + ",";
-                }
-                message += " ID: " + uuid;
-                String macAddress = bleDevice.getMac();
-                Integer deviceRSSI = signalStrengths.get(macAddress);
-                if (deviceRSSI != null) {
-                    message += ", RSSI: " + deviceRSSI;
-                    signalStrengths.remove(macAddress);
-                }
-                addEvent("BLE_FOUND", message);
-                foundDevices.put(macAddress, Calendar.getInstance().getTimeInMillis());
             }
             bleManager.disconnect(bleDevice);
             checkPendingConections();

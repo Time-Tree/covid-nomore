@@ -57,20 +57,24 @@ class NearbyAPI {
               message: event.message,
               timestamp: event.timestamp
             });
+            if (event.timestamp > sync) {
+              sync = event.timestamp;
+            }
             if (
               event.eventType === 'NEARBY_FOUND' ||
               event.eventType === 'BLE_FOUND'
             ) {
               const { eventType } = event;
               const type = eventType.substring(0, eventType.indexOf('_'));
+              const inputs = event.message.split(', ');
               const handshake = {
                 type,
                 time: parseInt(event.timestamp, 10),
                 formated: event.formatDate,
-                target: event.message.split('-')[0]
+                target: inputs.length === 3 ? inputs[1] : inputs[0]
               };
               if (type === 'BLE') {
-                const [, rssi] = event.message.match(/RSSI: (-?\d+)/);
+                const rssi = event.message.split('RSSI: ')[1] || null;
                 handshake.rssi = rssi;
                 handshake.approximatedDistance = approximateDistance(rssi);
                 handshake.coarseProximity = getCoarseProximity(rssi);
@@ -84,10 +88,10 @@ class NearbyAPI {
 
       store.dispatch(eventsActions.addEventAction(newEvents));
       store.dispatch(handshakeActions.addHandshakeAction(handshakes));
+      store.dispatch(eventsActions.setSync(sync));
       if (newEvents.length) {
-        const lastSync = newEvents[0].timestamp;
         await db.executeSql(
-          `DELETE FROM NearbyEvents WHERE timestamp <= ${lastSync}`
+          `DELETE FROM NearbyEvents WHERE timestamp <= ${sync}`
         );
       }
       this.lock = false;
