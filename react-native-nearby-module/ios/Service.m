@@ -52,6 +52,7 @@ static int NEARBY_DURATION = 1 * 60.0;
     [myNearbyManager startService: apiKey];
     NSDictionary *settings = [myDBUtil getSettingsData];
     [self parseSettingsData: settings];
+    NSLog(@"settings = %@", settings);
     dispatch_async(dispatch_get_main_queue(), ^{
         if ([[settings valueForKey:@"bleProcess"] integerValue] == 1) {
             [self bleTimerTask];
@@ -132,7 +133,7 @@ static int NEARBY_DURATION = 1 * 60.0;
 - (void) startBLETimerTask {
     NSLog(@"startBLETimerTask");
     [myBLEScanner scan];
-    [myBLEAdvertiser startAdvertising];
+    [myBLEAdvertiser restartAdvertising];
     [self sendNotification:@"Start BLE timer task"];
     self.bleStopTimer = [NSTimer scheduledTimerWithTimeInterval: BLE_DURATION
                                                          target: self

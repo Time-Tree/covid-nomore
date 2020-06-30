@@ -11,11 +11,13 @@ import android.util.Log;
 
 import com.clj.fastble.BleManager;
 import com.clj.fastble.callback.BleGattCallback;
+import com.clj.fastble.callback.BleReadCallback;
 import com.clj.fastble.callback.BleScanCallback;
 import com.clj.fastble.data.BleDevice;
 import com.clj.fastble.exception.BleException;
 import com.clj.fastble.scan.BleScanRuleConfig;
 
+import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -36,6 +38,7 @@ public class BLEScanner {
     private BleManager bleManager = null;
     private Application currentApplication = null;
     private int pendingConnections = 0;
+    private final String appIdentifier = "a9ecdb59-974e-43f0-9d93-27d5dcb060d6";
 
     public BLEScanner(DBManager dbHelper) {
         this.dbHelper = dbHelper;
@@ -50,7 +53,7 @@ public class BLEScanner {
     }
 
     private void setScanSettings() {
-        UUID[] services = {UUID.fromString("a9ecdb59-974e-43f0-9d93-27d5dcb060d6")};
+        UUID[] services = { UUID.fromString(appIdentifier) };
         BleScanRuleConfig scanRuleConfig = new BleScanRuleConfig.Builder().setServiceUuids(services).build();
         bleManager.initScanRule(scanRuleConfig);
     }
@@ -65,13 +68,17 @@ public class BLEScanner {
 
     public void stopScanner() {
         bleManager.cancelScan();
+        bleManager.disconnectAllDevice();
         addEvent("BLE_SCANNER", "Scanning stopped");
         isStarted = false;
+        isScanning = false;
         foundDevices.clear();
     }
 
     public void startScan() {
         Log.i(TAG, "start");
+        if (!isStarted)
+            return;
         if (currentApplication == null)
             return;
         if (isScanning)
@@ -95,6 +102,8 @@ public class BLEScanner {
 
         @Override
         public void onScanFinished(List<BleDevice> scanResultList) {
+            if (!isStarted)
+                return;
             Log.i(TAG, "onScanFinished " + scanResultList.size());
             for (BleDevice bleDevice : scanResultList) {
                 Log.i(TAG, "onScanFinished " + bleDevice.getName() + " " + bleDevice.getMac());
@@ -130,10 +139,10 @@ public class BLEScanner {
         }
 
         @Override
-        public void onConnectSuccess(BleDevice bleDevice, BluetoothGatt gatt, int status) {
+        public void onConnectSuccess(final BleDevice bleDevice, BluetoothGatt gatt, int status) {
             Log.i(TAG, "-----> onConnectSuccess " + bleDevice.getName() + " " + bleDevice.getMac());
             BluetoothGattService service = gatt.getService(UUID.fromString("a9ecdb59-974e-43f0-9d93-27d5dcb060d6"));
-            if(service != null) {
+            if (service != null) {
                 List<BluetoothGattCharacteristic> characteristics = service.getCharacteristics();
                 for (BluetoothGattCharacteristic characteristic : characteristics) {
                     Log.i(TAG, "characteristic " + characteristic.getUuid());
@@ -154,10 +163,34 @@ public class BLEScanner {
                     }
                     addEvent("BLE_FOUND", message);
                     foundDevices.put(macAddress, Calendar.getInstance().getTimeInMillis());
+                    bleManager.read(bleDevice, appIdentifier, appIdentifier, new BleReadCallback() {
+                        @Override
+                        public void onReadSuccess(byte[] data) {
+                            try {
+                                Log.i(TAG, "-----> onReadSuccess");
+                                String uniqueIdentifier = new String(data, "UTF-8");
+                                String message = "Characteristic data found. ID: " + uniqueIdentifier;
+                                addEvent("BLE_DATA_FOUND", message);
+                            } catch (UnsupportedEncodingException e) {
+                                e.printStackTrace();
+                                Log.i(TAG, "-----> onReadSuccess catch" + e.getMessage());
+                            }
+                            bleManager.disconnect(bleDevice);
+                            checkPendingConections();
+
+                        }
+
+                        @Override
+                        public void onReadFailure(BleException exception) {
+                            Log.i(TAG,
+                                    "-----> onReadFailure: " + exception.getDescription() + " " + exception.getCode());
+                            bleManager.disconnect(bleDevice);
+                            checkPendingConections();
+
+                        }
+                    });
                 }
             }
-            bleManager.disconnect(bleDevice);
-            checkPendingConections();
         }
 
         @Override

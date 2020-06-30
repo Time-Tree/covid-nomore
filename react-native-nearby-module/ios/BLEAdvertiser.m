@@ -4,6 +4,7 @@
 static DBUtil *myDBUtil;
 static NSString * const appIdentifier = @"a9ecdb59-974e-43f0-9d93-27d5dcb060d6";
 static NSString *uniqueIdentifier;
+static NSMutableDictionary *handshakeDevices;
 
 @implementation BLEAdvertiser
 
@@ -12,6 +13,7 @@ static NSString *uniqueIdentifier;
     self.peripheralManager = [[CBPeripheralManager alloc] initWithDelegate:self queue:nil options:@{CBPeripheralManagerOptionShowPowerAlertKey: @NO}];
     myDBUtil = [[DBUtil alloc] init];
     uniqueIdentifier = [[[UIDevice currentDevice] identifierForVendor] UUIDString];
+    handshakeDevices = [[NSMutableDictionary alloc] init];
     return self;
 }
 
@@ -50,6 +52,7 @@ static NSString *uniqueIdentifier;
 - (void) restartAdvertising {
     [self.peripheralManager stopAdvertising];
     [self performSelector:@selector(startAdvertising) withObject:nil afterDelay:5];
+    [handshakeDevices removeAllObjects];
 }
 
 - (void) startAdvertising {
@@ -63,7 +66,7 @@ static NSString *uniqueIdentifier;
     }
     if(self.peripheralManager.isAdvertising) {
         NSLog(@"Already advertising");
-        NSString *message = [NSString stringWithFormat: @"Start advertising failed: Already advertising."];
+//        NSString *message = [NSString stringWithFormat: @"Start advertising failed: Already advertising."];
 //        [myDBUtil createEvent: @"BLE_ADVERTISER_ERROR" withMessage:message];
         return;
     }
@@ -82,6 +85,7 @@ static NSString *uniqueIdentifier;
     NSLog(@"stopAdvertising");
     [self.peripheralManager stopAdvertising];
     [myDBUtil createEvent: @"BLE_ADVERTISER" withMessage:@"Advertising stopped"];
+    [handshakeDevices removeAllObjects];
 }
 
 - (void) peripheralManager:(CBPeripheralManager *)peripheral didAddService:(CBService *)service error:(NSError *)error {
@@ -117,6 +121,24 @@ static NSString *uniqueIdentifier;
 - (void)peripheral:(CBPeripheral *)peripheral didModifyServices:(NSArray<CBService *> *)invalidatedServices {
     NSLog(@"in advertiser didModifyServices: %@", peripheral.services);
 }
+
+
+- (void)peripheralManager:(CBPeripheralManager *)peripheral didReceiveReadRequest:(CBATTRequest *)request {
+    NSLog(@"didReceiveReadRequest: %@ %@", request.central, request.characteristic.UUID);
+    if ([request.characteristic.UUID isEqual:[CBUUID UUIDWithString:appIdentifier]]) {
+        request.value = [uniqueIdentifier dataUsingEncoding:NSUTF8StringEncoding];
+        [self.peripheralManager respondToRequest:request withResult:CBATTErrorSuccess];
+        NSNumber *handshakeTime = [handshakeDevices objectForKey:request.central.identifier];
+        if(!handshakeTime) {
+            NSString *message = [NSString stringWithFormat: @"Device %@ tried to read my characteristic", request.central.identifier];
+            [myDBUtil createEvent: @"BLE_ADVERTISER" withMessage:message];
+            [handshakeDevices setObject:[NSNumber numberWithLong:[[NSDate date] timeIntervalSince1970]] forKey:request.central.identifier];
+        }
+    } else {
+        NSLog(@"didReceiveReadRequest. Ignoring!");
+    }
+}
+
 
 - (void) sendNotification:(NSString*) message {
     UILocalNotification *localNotification = [[UILocalNotification alloc] init];

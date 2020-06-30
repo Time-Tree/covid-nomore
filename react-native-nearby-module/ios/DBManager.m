@@ -64,7 +64,7 @@ static sqlite3 *sqlite3Database;
         if (sqlite3_step(statement) == SQLITE_DONE) {
             NSLog(@"Event added");
         } else {
-            NSLog(@"Failed to add: %s", sqlite3_errmsg(sqlite3Database));
+            NSLog(@"Failed to add event: %s", sqlite3_errmsg(sqlite3Database));
         }
         sqlite3_finalize(statement);
         sqlite3_close(sqlite3Database);
@@ -84,7 +84,7 @@ static sqlite3 *sqlite3Database;
         if (sqlite3_step(statement) == SQLITE_DONE) {
             NSLog(@"Events were successfully deleted");
         } else {
-            NSLog(@"Failed to delete all: %s", sqlite3_errmsg(sqlite3Database));
+            NSLog(@"Failed to delete all events: %s", sqlite3_errmsg(sqlite3Database));
         }
         sqlite3_finalize(statement);
         sqlite3_close(sqlite3Database);
@@ -132,7 +132,7 @@ static sqlite3 *sqlite3Database;
                 if (sqlite3_step(insert_statement) == SQLITE_DONE) {
                     NSLog(@"Default settings created");
                 } else {
-                    NSLog(@"Failed to add: %s", sqlite3_errmsg(sqlite3Database));
+                    NSLog(@"Failed to add default settings: %s", sqlite3_errmsg(sqlite3Database));
                 }
                 sqlite3_finalize(insert_statement);
             }

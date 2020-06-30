@@ -135,10 +135,23 @@ static NSMutableDictionary *connectedDevices;
             message = [NSString stringWithFormat: @"ID: %@", uuid];
         }
         [connectedDevices setObject:message forKey:peripheral.identifier];
+        [peripheral setNotifyValue:YES forCharacteristic:characteristic];
+        [peripheral readValueForCharacteristic:(CBCharacteristic *)characteristic];
         [peripheral readRSSI];
 //        [self.centralManager cancelPeripheralConnection:peripheral];
 //        discoveredPeripheral = nil;
     }
+}
+
+- (void)peripheral:(CBPeripheral *)peripheral didUpdateValueForCharacteristic:(CBCharacteristic *)characteristic error:(NSError *)error {
+    if (error) {
+        NSLog(@"Error didUpdateValueForCharacteristic");
+        return;
+    }
+    NSLog(@"didUpdateValueForCharacteristic %@", characteristic);
+    NSString *stringFromData = [[NSString alloc] initWithData:characteristic.value encoding:NSUTF8StringEncoding];
+    NSString *message = [NSString stringWithFormat: @"Characteristic data found. ID: %@", stringFromData];
+    [myDBUtil createEvent: @"BLE_DATA_FOUND" withMessage:message];
 }
 
 - (void)peripheral:(CBPeripheral *)peripheral didModifyServices:(NSArray<CBService *> *)invalidatedServices {

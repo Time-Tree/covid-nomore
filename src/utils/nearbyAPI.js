@@ -122,11 +122,11 @@ class NearbyAPI {
   };
 
   saveSettings = async data => {
+    let db;
     try {
       delete data.bleProcess;
       delete data.nearbyProcess;
       SQLite.enablePromise(true);
-      let db;
       if (Platform.OS === 'android') {
         db = await SQLite.openDatabase('NearbyEvents');
       } else {
@@ -146,15 +146,20 @@ class NearbyAPI {
       });
       query += ' WHERE _ID = 1';
       await db.executeSql(query);
-      await db.close();
-      NearbyModule.restartService();
-    } catch (error) {}
+    } catch (error) {
+      console.log('saveSettings error', error);
+    } finally {
+      if (db) {
+        await db.close();
+      }
+    }
+    NearbyModule.restartService();
   };
 
   getSettings = async () => {
+    let db;
     try {
       SQLite.enablePromise(true);
-      let db;
       if (Platform.OS === 'android') {
         db = await SQLite.openDatabase('NearbyEvents');
       } else {
@@ -175,13 +180,18 @@ class NearbyAPI {
       await db.close();
       delete settings._ID;
       return settings;
-    } catch (error) {}
+    } catch (error) {
+      console.log('getSettings error', error);
+      if (db) {
+        await db.close();
+      }
+    }
   };
 
   setToggle = async (type, status) => {
+    let db;
     try {
       SQLite.enablePromise(true);
-      let db;
       if (Platform.OS === 'android') {
         db = await SQLite.openDatabase('NearbyEvents');
       } else {
@@ -193,9 +203,14 @@ class NearbyAPI {
       console.log('Saving new status', type, status);
       const query = `UPDATE Settings SET ${type} = ${status} WHERE _ID = 1`;
       await db.executeSql(query);
-      await db.close();
-      NearbyModule.restartService();
-    } catch (error) {}
+    } catch (error) {
+      console.log('setToggle error', error);
+    } finally {
+      if (db) {
+        await db.close();
+      }
+    }
+    NearbyModule.restartService();
   };
 }
 

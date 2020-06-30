@@ -4,6 +4,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattServer;
 import android.bluetooth.BluetoothGattServerCallback;
 import android.bluetooth.BluetoothGattService;
@@ -69,9 +70,10 @@ public class BLEAdvertiser {
 
         @Override
         public void onCharacteristicReadRequest(BluetoothDevice device, int requestId, int offset,
-                BluetoothGattCharacteristic characteristic) {
+                                                BluetoothGattCharacteristic characteristic) {
             super.onCharacteristicReadRequest(device, requestId, offset, characteristic);
             Log.w(TAG, "Device tried to read characteristic: " + characteristic.getUuid());
+            addEvent("BLE_ADVERTISER", "Device " + device.getAddress() + " tried to read my characteristic");
             Log.w(TAG, "Value: " + Arrays.toString(characteristic.getValue()));
 
             if (offset != 0) {
@@ -90,8 +92,8 @@ public class BLEAdvertiser {
 
         @Override
         public void onCharacteristicWriteRequest(BluetoothDevice device, int requestId,
-                BluetoothGattCharacteristic characteristic, boolean preparedWrite, boolean responseNeeded, int offset,
-                byte[] value) {
+                                                 BluetoothGattCharacteristic characteristic, boolean preparedWrite, boolean responseNeeded, int offset,
+                                                 byte[] value) {
             super.onCharacteristicWriteRequest(device, requestId, characteristic, preparedWrite, responseNeeded, offset,
                     value);
             String message = Base64.encodeToString(value, Base64.DEFAULT);
@@ -119,6 +121,10 @@ public class BLEAdvertiser {
 
         BluetoothGattCharacteristic mGattCharacteristic = new BluetoothGattCharacteristic(CHARACTERISTIC_UUID,
                 BluetoothGattCharacteristic.PROPERTY_READ, BluetoothGattCharacteristic.PERMISSION_READ);
+        BluetoothGattDescriptor bluetoothGattDescriptor = new BluetoothGattDescriptor(
+                UUID.fromString(convertIdToUUID(uniqueIdentifier)), BluetoothGattCharacteristic.PERMISSION_READ);
+        mGattCharacteristic.addDescriptor(bluetoothGattDescriptor);
+        mGattCharacteristic.setValue(this.uniqueIdentifier);
         mGattService.addCharacteristic(mGattCharacteristic);
 
         return mGattServer.addService(mGattService);
