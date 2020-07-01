@@ -10,8 +10,6 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
@@ -36,7 +34,7 @@ public class NearbyService extends Service {
     static Integer NOTIFICATION_CHANNEL_ID = 123456;
     static NotificationManagerCompat notificationManager;
     public Integer code = 0;
-    private DBManager dbHelper;
+    private DBUtil dbHelper;
     private BLEScanner mBLEScanner = null;
     private BLEAdvertiser mBLEAdvertiser = null;
     private NearbyManager nearbyManager = null;
@@ -69,10 +67,10 @@ public class NearbyService extends Service {
         startForeground(NOTIFICATION_CHANNEL_ID,
                 buildForegroundNotification("CovidNoMore", "Background Service", true));
         Context context = this.getApplicationContext();
-        dbHelper = new DBManager(context);
+        dbHelper = DBUtil.getInstance(context);
         if (checkBluetooth()) {
-            mBLEScanner = new BLEScanner(dbHelper);
-            mBLEAdvertiser = new BLEAdvertiser(dbHelper, context);
+            mBLEScanner = new BLEScanner(context);
+            mBLEAdvertiser = new BLEAdvertiser(context);
         } else {
             Log.e(TAG, "Bluetooth init error");
         }
@@ -119,7 +117,7 @@ public class NearbyService extends Service {
             bleStartTimer.cancel();
             bleStartTimer.purge();
         }
-        ContentValues settings = getSettingsData();
+        ContentValues settings = dbHelper.getSettingsData();
         parseSettingsData(settings);
         if (settings.getAsInteger("bleProcess") == 1) {
             startBLETimerTask();
@@ -131,7 +129,7 @@ public class NearbyService extends Service {
 
     public void restartService() {
         Log.i(TAG, "restartService");
-        ContentValues settings = getSettingsData();
+        ContentValues settings = dbHelper.getSettingsData();
         parseSettingsData(settings);
         stopAllProcess();
         if (settings.getAsInteger("bleProcess") == 1) {
@@ -248,35 +246,5 @@ public class NearbyService extends Service {
         }
     }
 
-    public void removeEvents() {
-        try {
-            SQLiteDatabase db = dbHelper.getWritableDatabase();
-            db.delete(EventContract.EventEntry.TABLE_NAME, null, null);
-            db.close();
-        } catch (Exception e) {
-            // do something
-        }
-    }
 
-    private ContentValues getSettingsData() {
-        ContentValues response = new ContentValues();
-        try {
-            SQLiteDatabase db = dbHelper.getReadableDatabase();
-            Cursor c = db.rawQuery("SELECT * FROM " + SettingsContract.SettingsEntry.TABLE_NAME + " WHERE _ID = 1",
-                    null);
-            if (c.moveToFirst()) {
-                response.put(SettingsContract.SettingsEntry.COLUMN_NAME_BLE_PROCESS, c.getInt(1));
-                response.put(SettingsContract.SettingsEntry.COLUMN_NAME_BLE_INTEVAL, c.getInt(2));
-                response.put(SettingsContract.SettingsEntry.COLUMN_NAME_BLE_DURATION, c.getInt(3));
-                response.put(SettingsContract.SettingsEntry.COLUMN_NAME_NEARBY_PROCESS, c.getInt(4));
-                response.put(SettingsContract.SettingsEntry.COLUMN_NAME_NEARBY_INTEVAL, c.getInt(5));
-                response.put(SettingsContract.SettingsEntry.COLUMN_NAME_NEARBY_DURATION, c.getInt(6));
-            }
-            c.close();
-            db.close();
-        } catch (Error e) {
-            e.printStackTrace();
-        }
-        return response;
-    }
 }

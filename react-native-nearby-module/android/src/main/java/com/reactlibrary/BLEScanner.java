@@ -4,8 +4,7 @@ import android.app.Application;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
-import android.content.ContentValues;
-import android.database.sqlite.SQLiteDatabase;
+import android.content.Context;
 import android.os.Build;
 import android.util.Log;
 
@@ -18,9 +17,7 @@ import com.clj.fastble.exception.BleException;
 import com.clj.fastble.scan.BleScanRuleConfig;
 
 import java.io.UnsupportedEncodingException;
-import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -32,7 +29,7 @@ public class BLEScanner {
     private static String TAG = "BLEScanner";
     private boolean isStarted = false;
     private boolean isScanning = false;
-    private DBManager dbHelper;
+    private DBUtil dbHelper;
     private HashMap<String, Long> foundDevices = new HashMap<>();
     private HashMap<String, Integer> signalStrengths = new HashMap<String, Integer>();
     private BleManager bleManager = null;
@@ -40,8 +37,8 @@ public class BLEScanner {
     private int pendingConnections = 0;
     private final String appIdentifier = "a9ecdb59-974e-43f0-9d93-27d5dcb060d6";
 
-    public BLEScanner(DBManager dbHelper) {
-        this.dbHelper = dbHelper;
+    public BLEScanner(Context context) {
+        this.dbHelper = DBUtil.getInstance(context);
         bleManager = BleManager.getInstance();
     }
 
@@ -53,7 +50,7 @@ public class BLEScanner {
     }
 
     private void setScanSettings() {
-        UUID[] services = { UUID.fromString(appIdentifier) };
+        UUID[] services = {UUID.fromString(appIdentifier)};
         BleScanRuleConfig scanRuleConfig = new BleScanRuleConfig.Builder().setServiceUuids(services).build();
         bleManager.initScanRule(scanRuleConfig);
     }
@@ -61,7 +58,7 @@ public class BLEScanner {
     public void startScanner() {
         if (isStarted)
             return;
-        addEvent("BLE_SCANNER", "Scanning started");
+        dbHelper.addEvent("BLE_SCANNER", "Scanning started");
         isStarted = true;
         startScan();
     }
@@ -69,7 +66,7 @@ public class BLEScanner {
     public void stopScanner() {
         bleManager.cancelScan();
         bleManager.disconnectAllDevice();
-        addEvent("BLE_SCANNER", "Scanning stopped");
+        dbHelper.addEvent("BLE_SCANNER", "Scanning stopped");
         isStarted = false;
         isScanning = false;
         foundDevices.clear();
@@ -161,7 +158,7 @@ public class BLEScanner {
                         message += ", RSSI: " + deviceRSSI;
                         signalStrengths.remove(macAddress);
                     }
-                    addEvent("BLE_FOUND", message);
+                    dbHelper.addEvent("BLE_FOUND", message);
                     foundDevices.put(macAddress, Calendar.getInstance().getTimeInMillis());
                     bleManager.read(bleDevice, appIdentifier, appIdentifier, new BleReadCallback() {
                         @Override
@@ -170,7 +167,7 @@ public class BLEScanner {
                                 Log.i(TAG, "-----> onReadSuccess");
                                 String uniqueIdentifier = new String(data, "UTF-8");
                                 String message = "Characteristic data found. ID: " + uniqueIdentifier;
-                                addEvent("BLE_DATA_FOUND", message);
+                                dbHelper.addEvent("BLE_DATA_FOUND", message);
                             } catch (UnsupportedEncodingException e) {
                                 e.printStackTrace();
                                 Log.i(TAG, "-----> onReadSuccess catch" + e.getMessage());
@@ -208,31 +205,5 @@ public class BLEScanner {
             isScanning = false;
             startScan();
         }
-    }
-
-    private long addEvent(String eventType, String message) {
-        long newRowId = -1;
-        String formatDate = getFormattedDate();
-        Long timestamp = Calendar.getInstance().getTimeInMillis();
-        try {
-            SQLiteDatabase db = dbHelper.getWritableDatabase();
-            ContentValues values = new ContentValues();
-            values.put(EventContract.EventEntry.COLUMN_NAME_EVENT_TYPE, eventType);
-            values.put(EventContract.EventEntry.COLUMN_NAME_MESSAGE, message);
-            values.put(EventContract.EventEntry.COLUMN_NAME_FORMAT_DATE, formatDate);
-            values.put(EventContract.EventEntry.COLUMN_NAME_TIMESTAMP, timestamp);
-            newRowId = db.insert(EventContract.EventEntry.TABLE_NAME, null, values);
-            db.close();
-        } catch (Error e) {
-            e.printStackTrace();
-        }
-        return newRowId;
-    }
-
-    public String getFormattedDate() {
-        Date c = Calendar.getInstance().getTime();
-        SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss:SS");
-        String formattedDate = df.format(c);
-        return formattedDate;
     }
 }

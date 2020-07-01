@@ -13,19 +13,14 @@ import android.bluetooth.le.AdvertiseCallback;
 import android.bluetooth.le.AdvertiseData;
 import android.bluetooth.le.AdvertiseSettings;
 import android.bluetooth.le.BluetoothLeAdvertiser;
-import android.content.ContentValues;
 import android.content.Context;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Build;
 import android.os.ParcelUuid;
 import android.provider.Settings.Secure;
 import android.util.Base64;
 import android.util.Log;
 
-import java.text.SimpleDateFormat;
 import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.UUID;
 
 import androidx.annotation.RequiresApi;
@@ -38,16 +33,16 @@ public class BLEAdvertiser {
     private BluetoothGattServer mGattServer;
     private BluetoothLeAdvertiser advertiser;
     private AdvertiseCallback advertisingCallback;
-    private DBManager dbHelper;
+    private DBUtil dbHelper;
     private boolean advertising;
     private Context context;
     private final String appIdentifier = "a9ecdb59-974e-43f0-9d93-27d5dcb060d6";
     private String uniqueIdentifier;
 
-    public BLEAdvertiser(DBManager dbHelper, Context context) {
+    public BLEAdvertiser(Context context) {
         super();
         this.context = context;
-        this.dbHelper = dbHelper;
+        this.dbHelper = DBUtil.getInstance(context);
         this.advertising = false;
         this.uniqueIdentifier = Secure.getString(context.getContentResolver(), Secure.ANDROID_ID);
     }
@@ -73,7 +68,7 @@ public class BLEAdvertiser {
                                                 BluetoothGattCharacteristic characteristic) {
             super.onCharacteristicReadRequest(device, requestId, offset, characteristic);
             Log.w(TAG, "Device tried to read characteristic: " + characteristic.getUuid());
-            addEvent("BLE_ADVERTISER", "Device " + device.getAddress() + " tried to read my characteristic");
+            dbHelper.addEvent("BLE_ADVERTISER", "Device " + device.getAddress() + " tried to read my characteristic");
             Log.w(TAG, "Value: " + Arrays.toString(characteristic.getValue()));
 
             if (offset != 0) {
@@ -141,17 +136,17 @@ public class BLEAdvertiser {
 
         if (mBluetoothAdapter == null) {
             Log.e(TAG, "BLUETOOTH_UNAVAILABLE: Bluetooth is not available.");
-            addEvent("BLE_ADVERTISER_ERROR", "Start advertising failed: Bluetooth is not available.");
+            dbHelper.addEvent("BLE_ADVERTISER_ERROR", "Start advertising failed: Bluetooth is not available.");
             return;
         }
         if (!mBluetoothAdapter.isEnabled()) {
             Log.e(TAG, "BLUETOOTH_DISABLED: Bluetooth is disabled.");
-            addEvent("BLE_ADVERTISER_ERROR", "Start advertising failed: Bluetooth is disabled.");
+            dbHelper.addEvent("BLE_ADVERTISER_ERROR", "Start advertising failed: Bluetooth is disabled.");
             return;
         }
         if (!mBluetoothAdapter.isMultipleAdvertisementSupported()) {
             Log.e(TAG, "BLE_UNSUPPORTED: Bluetooth LE Advertising not supported on this device.");
-            addEvent("BLE_ADVERTISER_ERROR",
+            dbHelper.addEvent("BLE_ADVERTISER_ERROR",
                     "Start advertising failed: Bluetooth LE Advertising not supported on this device.");
             return;
         }
@@ -164,8 +159,7 @@ public class BLEAdvertiser {
             boolean addedFlag = this.addService();
             if (!addedFlag) {
                 Log.e(TAG, "add service failed");
-                addEvent("BLE_ADVERTISER_ERROR",
-                        "Start advertising failed: Add service failed.");
+                dbHelper.addEvent("BLE_ADVERTISER_ERROR", "Start advertising failed: Add service failed.");
             } else {
                 AdvertiseSettings settings = new AdvertiseSettings.Builder()
                         .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY).setConnectable(true)
@@ -180,14 +174,14 @@ public class BLEAdvertiser {
                         super.onStartSuccess(settingsInEffect);
                         advertising = true;
                         Log.w(TAG, "Started Advertising " + settingsInEffect);
-                        addEvent("BLE_ADVERTISER", "Start advertising success with UUID: " + uniqueIdentifier);
+                        dbHelper.addEvent("BLE_ADVERTISER", "Start advertising success with UUID: " + uniqueIdentifier);
                     }
 
                     @Override
                     public void onStartFailure(int errorCode) {
                         advertising = false;
                         Log.e(TAG, "Advertising onStartFailure: " + errorCode);
-                        addEvent("BLE_ADVERTISER", "Advertising onStartFailure: " + errorCode);
+                        dbHelper.addEvent("BLE_ADVERTISER", "Advertising onStartFailure: " + errorCode);
                         super.onStartFailure(errorCode);
                     }
                 };
@@ -200,41 +194,15 @@ public class BLEAdvertiser {
         if (mGattServer != null) {
             mGattServer.close();
         }
-        if (mBluetoothAdapter != null && mBluetoothAdapter.isEnabled() && advertiser != null && advertisingCallback != null) {
+        if (mBluetoothAdapter != null && mBluetoothAdapter.isEnabled() && advertiser != null
+                && advertisingCallback != null) {
             advertising = false;
             advertiser.stopAdvertising(advertisingCallback);
         }
-        addEvent("BLE_ADVERTISER", "Advertising stopped");
+        dbHelper.addEvent("BLE_ADVERTISER", "Advertising stopped");
     }
 
     public boolean isAdvertising() {
         return this.advertising;
     }
-
-    private long addEvent(String eventType, String message) {
-        long newRowId = -1;
-        String formatDate = getFormattedDate();
-        Long timestamp = Calendar.getInstance().getTimeInMillis();
-        try {
-            SQLiteDatabase db = dbHelper.getWritableDatabase();
-            ContentValues values = new ContentValues();
-            values.put(EventContract.EventEntry.COLUMN_NAME_EVENT_TYPE, eventType);
-            values.put(EventContract.EventEntry.COLUMN_NAME_MESSAGE, message);
-            values.put(EventContract.EventEntry.COLUMN_NAME_FORMAT_DATE, formatDate);
-            values.put(EventContract.EventEntry.COLUMN_NAME_TIMESTAMP, timestamp);
-            newRowId = db.insert(EventContract.EventEntry.TABLE_NAME, null, values);
-            db.close();
-        } catch (Error e) {
-            e.printStackTrace();
-        }
-        return newRowId;
-    }
-
-    public String getFormattedDate() {
-        Date c = Calendar.getInstance().getTime();
-        SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss:SS");
-        String formattedDate = df.format(c);
-        return formattedDate;
-    }
-
 }

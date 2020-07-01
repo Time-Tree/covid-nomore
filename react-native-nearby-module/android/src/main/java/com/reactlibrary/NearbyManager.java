@@ -1,10 +1,8 @@
 package com.reactlibrary;
 
 import android.app.PendingIntent;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings.Secure;
@@ -26,10 +24,6 @@ import com.google.android.gms.nearby.messages.Strategy;
 import com.google.android.gms.nearby.messages.SubscribeCallback;
 import com.google.android.gms.nearby.messages.SubscribeOptions;
 
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-
 import static com.google.android.gms.nearby.messages.Strategy.TTL_SECONDS_INFINITE;
 
 public class NearbyManager implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
@@ -41,7 +35,7 @@ public class NearbyManager implements GoogleApiClient.ConnectionCallbacks, Googl
     private volatile Boolean _isPublishing = false;
     private volatile Boolean _isSubscribing = false;
     private Boolean _isBLEOnly = false;
-    private DBManager dbHelper;
+    private DBUtil dbHelper;
 
     private Context mContext;
     private static NearbyManager sInstance;
@@ -57,7 +51,7 @@ public class NearbyManager implements GoogleApiClient.ConnectionCallbacks, Googl
     private NearbyManager(Context context) {
         mContext = context;
         connect(true);
-        dbHelper = new DBManager(context);
+        dbHelper = DBUtil.getInstance(context);
         androidId = Secure.getString(context.getContentResolver(), Secure.ANDROID_ID);
         Log.i(TAG, "onCreate NEARBY MANAGEEERRR");
     }
@@ -68,7 +62,7 @@ public class NearbyManager implements GoogleApiClient.ConnectionCallbacks, Googl
             super.onFound(message);
             String messageAsString = new String(message.getContent());
             Log.d(TAG, "Message Found: " + messageAsString);
-            createEvent("NEARBY_FOUND", messageAsString);
+            dbHelper.addEvent("NEARBY_FOUND", messageAsString);
         }
 
         @Override
@@ -83,14 +77,14 @@ public class NearbyManager implements GoogleApiClient.ConnectionCallbacks, Googl
         public void onDistanceChanged(Message message, Distance distance) {
             super.onDistanceChanged(message, distance);
             Log.d(TAG, "Distance Changed: " + message.toString() + " " + distance.getMeters() + "m");
-            createEvent("DISTANCE_CHANGED", message.toString() + " " + distance.getMeters() + "m");
+            dbHelper.addEvent("DISTANCE_CHANGED", message.toString() + " " + distance.getMeters() + "m");
         }
 
         @Override
         public void onBleSignalChanged(Message message, BleSignal bleSignal) {
             super.onBleSignalChanged(message, bleSignal);
             Log.d(TAG, "Distance Changed: " + message.toString() + " " + bleSignal.getRssi() + " rssi");
-            createEvent("DISTANCE_CHANGED", message.toString() + " " + bleSignal.getRssi() + " rssi");
+            dbHelper.addEvent("DISTANCE_CHANGED", message.toString() + " " + bleSignal.getRssi() + " rssi");
         }
     };
 
@@ -155,19 +149,19 @@ public class NearbyManager implements GoogleApiClient.ConnectionCallbacks, Googl
 
     public void connect(boolean bleOnly) {
         if (!isMinimumAndroidVersion()) {
-            createEvent("NEARBY_ERROR",
+            dbHelper.addEvent("NEARBY_ERROR",
                     "Current Android version is too low: " + Integer.toString(Build.VERSION.SDK_INT));
             return;
         }
         if (!isGooglePlayServicesAvailable(true)) {
-            createEvent("NEARBY_ERROR", "Google Play Services is not available on this device.");
+            dbHelper.addEvent("NEARBY_ERROR", "Google Play Services is not available on this device.");
             return;
         }
         _isBLEOnly = bleOnly;
         GoogleApiClient client = getGoogleAPIInstance();
         if (client.isConnected()) {
             Log.w(TAG, "Google API Client is already connected.");
-            createEvent("NEARBY_CONNECTED", "Already connected.");
+            dbHelper.addEvent("NEARBY_CONNECTED", "Already connected.");
             return;
         }
         client.connect();
@@ -177,7 +171,7 @@ public class NearbyManager implements GoogleApiClient.ConnectionCallbacks, Googl
         GoogleApiClient client = getGoogleAPIInstance();
         client.disconnect();
         Log.d(TAG, "Google API Client disconnected.");
-        createEvent("NEARBY_DISCONNECTED", "Google API Client is disconnected.");
+        dbHelper.addEvent("NEARBY_DISCONNECTED", "Google API Client is disconnected.");
     }
 
     public boolean isConnected() {
@@ -203,18 +197,18 @@ public class NearbyManager implements GoogleApiClient.ConnectionCallbacks, Googl
                     if (status.isSuccess()) {
                         Log.i(TAG, "Published message successfully.");
                         _isPublishing = true;
-                        createEvent("NEARBY_PUBLISH_SUCCESS", new String(publishMessage.getContent()));
+                        dbHelper.addEvent("NEARBY_PUBLISH_SUCCESS", new String(publishMessage.getContent()));
                     } else {
                         Log.e(TAG, "Publish failed.");
                         Log.e(TAG, status.getStatusMessage());
                         _isPublishing = false;
-                        createEvent("NEARBY_PUBLISH_FAILED", status.getStatusMessage());
+                        dbHelper.addEvent("NEARBY_PUBLISH_FAILED", status.getStatusMessage());
                     }
                 }
             });
         } else {
             Log.e(TAG, "Google API Client not connected. Call " + TAG + ".connect() before publishing.");
-            createEvent("NEARBY_PUBLISH_FAILED", "Google API Client not connected. Call .connect() before publishing.");
+            dbHelper.addEvent("NEARBY_PUBLISH_FAILED", "Google API Client not connected. Call .connect() before publishing.");
         }
     }
 
@@ -226,7 +220,7 @@ public class NearbyManager implements GoogleApiClient.ConnectionCallbacks, Googl
             _isPublishing = false;
             Log.i(TAG, "Unpublished message.");
         }
-        createEvent("NEARBY_UNPUBLISH", "");
+        dbHelper.addEvent("NEARBY_UNPUBLISH", "");
     }
 
     public boolean isSubscribing() {
@@ -245,18 +239,18 @@ public class NearbyManager implements GoogleApiClient.ConnectionCallbacks, Googl
                             if (status.isSuccess()) {
                                 Log.i(TAG, "Subscribe success.");
                                 _isSubscribing = true;
-                                createEvent("NEARBY_SUBSCRIBE_SUCCESS", "");
+                                dbHelper.addEvent("NEARBY_SUBSCRIBE_SUCCESS", "");
                             } else {
                                 Log.e(TAG, "Subscribe failed");
                                 Log.e(TAG, status.getStatusMessage());
                                 _isSubscribing = false;
-                                createEvent("NEARBY_SUBSCRIBE_FAILED", status.getStatusMessage());
+                                dbHelper.addEvent("NEARBY_SUBSCRIBE_FAILED", status.getStatusMessage());
                             }
                         }
                     });
         } else {
             Log.e(TAG, "Google API Client not connected. Call " + TAG + ".connect() before subscribing.");
-            createEvent("NEARBY_ERROR", "Google API Client not connected. Call .connect() before subscribing.");
+            dbHelper.addEvent("NEARBY_ERROR", "Google API Client not connected. Call .connect() before subscribing.");
         }
     }
 
@@ -266,14 +260,14 @@ public class NearbyManager implements GoogleApiClient.ConnectionCallbacks, Googl
             Nearby.Messages.unsubscribe(client, _messageListener);
         Log.i(TAG, "Unsubscribe listener.");
         _isSubscribing = false;
-        createEvent("NEARBY_UNSUBSCRIBE", "");
+        dbHelper.addEvent("NEARBY_UNSUBSCRIBE", "");
     }
 
     @Override
     public void onConnected(Bundle bundle) {
         if (getGoogleAPIInstance().isConnected()) {
             Log.d(TAG, "Google API Client connected.");
-            createEvent("NEARBY_CONNECTED", "Google API connected.");
+            dbHelper.addEvent("NEARBY_CONNECTED", "Google API connected.");
         } else {
             Log.e(TAG, "Google API Client not connected.");
         }
@@ -282,13 +276,13 @@ public class NearbyManager implements GoogleApiClient.ConnectionCallbacks, Googl
     @Override
     public void onConnectionSuspended(int i) {
         Log.e(TAG, "CONNECTION_SUSPENDED " + i);
-        createEvent("CONNECTION_SUSPENDED", "Google Client connection suspended.");
+        dbHelper.addEvent("CONNECTION_SUSPENDED", "Google Client connection suspended.");
     }
 
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
         Log.e(TAG, "NEARBY_ERROR " + connectionResult.toString());
-        createEvent("NEARBY_ERROR", "Google Client connection failed: " + connectionResult.getErrorMessage());
+        dbHelper.addEvent("NEARBY_ERROR", "Google Client connection failed: " + connectionResult.getErrorMessage());
         Log.e(TAG, "connectionResult.hasResolution() = " + connectionResult.hasResolution());
         if (connectionResult.hasResolution()) {
             try {
@@ -307,45 +301,7 @@ public class NearbyManager implements GoogleApiClient.ConnectionCallbacks, Googl
         }
     }
 
-    public void createEvent(String eventType, String message) {
-        try {
-            addEvent(eventType, message, getFormattedDate(), Calendar.getInstance().getTimeInMillis());
-        } catch (Error e) {
-            e.printStackTrace();
-        }
-    }
-
-    public String getFormattedDate() {
-        Date c = Calendar.getInstance().getTime();
-        SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss:SS");
-        String formattedDate = df.format(c);
-        return formattedDate;
-    }
-
-    private long addEvent(String eventType, String message, String formatDate, Long timestamp) {
-        long newRowId = -1;
-        try {
-            SQLiteDatabase db = dbHelper.getWritableDatabase();
-            ContentValues values = new ContentValues();
-            values.put(EventContract.EventEntry.COLUMN_NAME_EVENT_TYPE, eventType);
-            values.put(EventContract.EventEntry.COLUMN_NAME_MESSAGE, message);
-            values.put(EventContract.EventEntry.COLUMN_NAME_FORMAT_DATE, formatDate);
-            values.put(EventContract.EventEntry.COLUMN_NAME_TIMESTAMP, timestamp);
-            newRowId = db.insert(EventContract.EventEntry.TABLE_NAME, null, values);
-            db.close();
-        } catch (Error e) {
-            e.printStackTrace();
-        }
-        return newRowId;
-    }
-
-    public void removeEvents() {
-        try {
-            SQLiteDatabase db = dbHelper.getWritableDatabase();
-            db.delete(EventContract.EventEntry.TABLE_NAME, null, null);
-            db.close();
-        } catch (Exception e) {
-            // do something
-        }
+    public void removeEvents(){
+        dbHelper.removeEvents();
     }
 }
