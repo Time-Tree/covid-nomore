@@ -1,29 +1,26 @@
 #import "DBManager.h"
 #import <sqlite3.h>
 
-static const NSString *DATABASE_NAME = @"NearbyEvents.db";
-static const NSString *EVENTS_TABLE_NAME = @"NearbyEvents";
-static const NSString *COLUMN_NAME_EVENT_TYPE = @"eventType";
-static const NSString *COLUMN_NAME_MESSAGE = @"message";
-static const NSString *COLUMN_NAME_FORMAT_DATE = @"formatDate";
-static const NSString *COLUMN_NAME_TIMESTAMP = @"timestamp";
-
-static const NSString *SETTINGS_TABLE_NAME = @"Settings";
-static const NSString *COLUMN_NAME_BLE_PROCESS = @"bleProcess";
-static const NSString *COLUMN_NAME_BLE_INTEVAL = @"bleInterval";
-static const NSString *COLUMN_NAME_BLE_DURATION = @"bleDuration";
-static const NSString *COLUMN_NAME_NEARBY_PROCESS = @"nearbyProcess";
-static const NSString *COLUMN_NAME_NEARBY_INTEVAL = @"nearbyInterval";
-static const NSString *COLUMN_NAME_NEARBY_DURATION = @"nearbyDuration";
 static sqlite3 *sqlite3Database;
 
 @implementation DBManager
+
++ (id) sharedInstance {
+    static DBManager *sharedInstance = nil;
+    @synchronized(self) {
+        if (sharedInstance == nil)
+            sharedInstance = [[self alloc] init];
+    }
+    return sharedInstance;
+}
 
 - (instancetype) init {
     self = [super init];
     [self createEventsTable];
     [self createSettingsTable];
     [self insertDefaultSettingsData];
+    [self createTokensTable];
+    [self createHandshakesTable];
     return self;
 }
 
@@ -178,5 +175,129 @@ static sqlite3 *sqlite3Database;
     }
     return response;
 }
+
+- (void) createTokensTable {
+    const char *dbPath = [self.databasePath UTF8String];
+    if (sqlite3_open(dbPath, &sqlite3Database) == SQLITE_OK) {
+        NSString *createTableSQL = [NSString stringWithFormat: @"CREATE TABLE IF NOT EXISTS %@ (_ID integer primary key AUTOINCREMENT, %@ text, %@ integer, %@ integer)", TOKENS_TABLE_NAME, COLUMN_NAME_TOKEN, COLUMN_NAME_CREATED, COLUMN_NAME_USED];
+        char *errMsg;
+        const char *sql_stmt = [createTableSQL UTF8String];
+        if (sqlite3_exec(sqlite3Database, sql_stmt, NULL, NULL, &errMsg) != SQLITE_OK) {
+            NSLog(@"Failed to create table: %s", sqlite3_errmsg(sqlite3Database));
+        } else {
+            NSLog(@"%@ table created", TOKENS_TABLE_NAME);
+        }
+        sqlite3_close(sqlite3Database);
+    } else {
+        NSLog(@"Failed to open database: %s", sqlite3_errmsg(sqlite3Database));
+    }
+}
+
+- (void) saveToken: (NSDictionary *) data {
+    const char *dbPath = [self.databasePath UTF8String];
+    if (sqlite3_open(dbPath, &sqlite3Database) == SQLITE_OK) {
+        NSString *insertSQL = [NSString stringWithFormat: @"INSERT INTO %@ (%@, %@, %@) VALUES (\"%@\", %@, %@)", TOKENS_TABLE_NAME, COLUMN_NAME_TOKEN, COLUMN_NAME_CREATED, COLUMN_NAME_USED, data[@"token"], data[@"created"], data[@"used"]];
+        
+        const char *insert_stmt = [insertSQL UTF8String];
+        sqlite3_stmt  *statement;
+        sqlite3_prepare_v2(sqlite3Database, insert_stmt, -1, &statement, NULL);
+        if (sqlite3_step(statement) == SQLITE_DONE) {
+            NSLog(@"Token added");
+        } else {
+            NSLog(@"Failed to add Token: %s", sqlite3_errmsg(sqlite3Database));
+        }
+        sqlite3_finalize(statement);
+        sqlite3_close(sqlite3Database);
+    } else {
+        NSLog(@"Database is closed: %s", sqlite3_errmsg(sqlite3Database));
+    }
+}
+
+- (void) updateTokenUsed: (NSString *) token {
+    const char *dbPath = [self.databasePath UTF8String];
+    if (sqlite3_open(dbPath, &sqlite3Database) == SQLITE_OK) {
+        NSString *updateSQL = [NSString stringWithFormat: @"UPDATE %@ SET %@ = 1 WHERE  %@ = \"%@\"", TOKENS_TABLE_NAME, COLUMN_NAME_USED, COLUMN_NAME_TOKEN, token];
+        
+        const char *update_stmt = [updateSQL UTF8String];
+        sqlite3_stmt  *statement;
+        sqlite3_prepare_v2(sqlite3Database, update_stmt, -1, &statement, NULL);
+        if (sqlite3_step(statement) == SQLITE_DONE) {
+            NSLog(@"Token updated");
+        } else {
+            NSLog(@"Failed to update token: %s", sqlite3_errmsg(sqlite3Database));
+        }
+        sqlite3_finalize(statement);
+        sqlite3_close(sqlite3Database);
+    } else {
+        NSLog(@"Database is closed: %s", sqlite3_errmsg(sqlite3Database));
+    }
+}
+
+
+- (NSDictionary *) getLastToken {
+    NSLog(@"getLastToken");
+    const char *dbPath = [self.databasePath UTF8String];
+    NSDictionary *response = [[NSDictionary alloc] init];
+    if (sqlite3_open(dbPath, &sqlite3Database) == SQLITE_OK) {
+        NSString *selectSQL = [NSString stringWithFormat: @"SELECT \"%@\", \"%@\" FROM \"%@\" ORDER BY \"%@\" DESC LIMIT 1;", COLUMN_NAME_TOKEN, COLUMN_NAME_CREATED, TOKENS_TABLE_NAME, COLUMN_NAME_CREATED];
+        NSLog(@"selectSQL = %@", selectSQL);
+        const char *select_stmt = [selectSQL UTF8String];
+        sqlite3_stmt  *select_statement;
+        if (sqlite3_prepare_v2(sqlite3Database, select_stmt, -1, &select_statement, NULL) == SQLITE_OK) {
+            while(sqlite3_step(select_statement) == SQLITE_ROW) {
+                const unsigned char *token =  sqlite3_column_text(select_statement, 0);
+                double created =  sqlite3_column_double(select_statement, 1);
+                response = @{
+                   @"token": [NSString stringWithUTF8String:(char *)token],
+                   @"created": [NSNumber numberWithDouble:created]
+               };
+                break;
+            }
+        }
+        sqlite3_finalize(select_statement);
+        sqlite3_close(sqlite3Database);
+    } else {
+        NSLog(@"Database is closed: %s", sqlite3_errmsg(sqlite3Database));
+    }
+    return response;
+}
+
+- (void) createHandshakesTable {
+    const char *dbPath = [self.databasePath UTF8String];
+    if (sqlite3_open(dbPath, &sqlite3Database) == SQLITE_OK) {
+        NSString *createTableSQL = [NSString stringWithFormat: @"CREATE TABLE IF NOT EXISTS %@ (_ID integer primary key AUTOINCREMENT, %@ text UNIQUE, %@ integer, %@ text, %@ integer)", HANDSHAKES_TABLE_NAME, COLUMN_NAME_HANDSHAKE_TOKEN, COLUMN_NAME_HANDSHAKE_DISCOVERED, COLUMN_NAME_HANDSHAKE_RSSI, COLUMN_NAME_HANDSHAKE_DATA];
+        char *errMsg;
+        const char *sql_stmt = [createTableSQL UTF8String];
+        if (sqlite3_exec(sqlite3Database, sql_stmt, NULL, NULL, &errMsg) != SQLITE_OK) {
+            NSLog(@"Failed to create table: %s", sqlite3_errmsg(sqlite3Database));
+        } else {
+            NSLog(@"%@ table created", TOKENS_TABLE_NAME);
+        }
+        sqlite3_close(sqlite3Database);
+    } else {
+        NSLog(@"Failed to open database: %s", sqlite3_errmsg(sqlite3Database));
+    }
+}
+
+- (void) saveHandshake: (NSDictionary *) data {
+    const char *dbPath = [self.databasePath UTF8String];
+    if (sqlite3_open(dbPath, &sqlite3Database) == SQLITE_OK) {
+        NSString *insertSQL = [NSString stringWithFormat: @"INSERT OR REPLACE INTO %@ (%@, %@ ,%@, %@) VALUES (\"%@\", %@, \"%@\", %@)", HANDSHAKES_TABLE_NAME, COLUMN_NAME_HANDSHAKE_TOKEN, COLUMN_NAME_HANDSHAKE_DISCOVERED, COLUMN_NAME_HANDSHAKE_RSSI, COLUMN_NAME_HANDSHAKE_DATA, data[@"token"], data[@"discovered"], data[@"rssi"], data[@"characteristicData"]];
+        
+        const char *insert_stmt = [insertSQL UTF8String];
+        sqlite3_stmt  *statement;
+        sqlite3_prepare_v2(sqlite3Database, insert_stmt, -1, &statement, NULL);\
+        if (sqlite3_step(statement) == SQLITE_DONE) {
+            NSLog(@"Handshake added");
+        } else {
+            NSLog(@"Failed to add Handshake: %s", sqlite3_errmsg(sqlite3Database));
+        }
+        sqlite3_finalize(statement);
+        sqlite3_close(sqlite3Database);
+    } else {
+        NSLog(@"Database is closed: %s", sqlite3_errmsg(sqlite3Database));
+    }
+}
+
 
 @end

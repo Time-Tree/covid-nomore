@@ -14,7 +14,7 @@ static NSMutableDictionary *connectedDevices;
     self = [super init];
     self.centralManager = [[CBCentralManager alloc] initWithDelegate:self queue:nil];
     [self centralManagerDidUpdateState:self.centralManager];
-    myDBUtil = [[DBUtil alloc] init];
+    myDBUtil = [DBUtil sharedInstance];
     uniqueIdentifier = [[[UIDevice currentDevice] identifierForVendor] UUIDString];
     foundDevices = [[NSMutableDictionary alloc] init];
     connectedDevices = [[NSMutableDictionary alloc] init];
@@ -124,20 +124,14 @@ static NSMutableDictionary *connectedDevices;
     for (CBCharacteristic *characteristic in service.characteristics) {
         NSLog(@"Discovered characteristic %@", characteristic);
         NSString *uuid = [NSString stringWithFormat: @"%@", characteristic.UUID];
-        NSString *substr = [uuid substringFromIndex:18];
-        if([substr isEqual: @"-0000-000000000000"]) {
-            uuid = [uuid substringToIndex:18];
-        }
-        NSString *message;
-        if(peripheral.name!= nil) {
-            message = [NSString stringWithFormat: @"NM: %@, ID: %@", peripheral.name, uuid];
-        } else {
-            message = [NSString stringWithFormat: @"ID: %@", uuid];
-        }
-        [connectedDevices setObject:message forKey:peripheral.identifier];
+        NSMutableDictionary *device = [[NSMutableDictionary alloc] init];
+        device[@"token"] = uuid;
+        device[@"characteristicData"] = @0;
+        device[@"rssi"] = @"-";
+        [connectedDevices setObject:device forKey:peripheral.identifier];
+        [peripheral readRSSI];
         [peripheral setNotifyValue:YES forCharacteristic:characteristic];
         [peripheral readValueForCharacteristic:(CBCharacteristic *)characteristic];
-        [peripheral readRSSI];
 //        [self.centralManager cancelPeripheralConnection:peripheral];
 //        discoveredPeripheral = nil;
     }
@@ -152,6 +146,10 @@ static NSMutableDictionary *connectedDevices;
     NSString *stringFromData = [[NSString alloc] initWithData:characteristic.value encoding:NSUTF8StringEncoding];
     NSString *message = [NSString stringWithFormat: @"Characteristic data found. ID: %@", stringFromData];
     [myDBUtil createEvent: @"BLE_DATA_FOUND" withMessage:message];
+    NSMutableDictionary *device = [connectedDevices objectForKey:peripheral.identifier];
+    [device setValue:@1 forKey:@"characteristicData"];
+    [myDBUtil addHandshake:device];
+    [connectedDevices removeObjectForKey:peripheral.identifier];
 }
 
 - (void)peripheral:(CBPeripheral *)peripheral didModifyServices:(NSArray<CBService *> *)invalidatedServices {
@@ -163,13 +161,16 @@ static NSMutableDictionary *connectedDevices;
 }
 
 - (void)peripheral:(CBPeripheral *)peripheral didReadRSSI:(NSNumber *)RSSI error:(NSError *)error {
-    NSLog(@"------> didReadRSSI RSSI:  %@ identifier: %@", RSSI, peripheral.identifier);
-    NSString *messageString = [connectedDevices objectForKey:peripheral.identifier];
-    if(error == nil) {
-        messageString = [NSString stringWithFormat: @"%@, RSSI: %@", messageString, RSSI];
+    NSLog(@"didReadRSSI RSSI:  %@ identifier: %@", RSSI, peripheral.identifier);
+    NSMutableDictionary *device = [connectedDevices objectForKey:peripheral.identifier];
+    NSString *message = [NSString stringWithFormat: @"ID: %@", [device valueForKey:@"token"]];
+    if (error == nil) {
+        [device setValue:RSSI forKey:@"rssi"];
+        message = [NSString stringWithFormat: @"%@, RSSI: %@", message, RSSI];
     }
-    [myDBUtil createEvent: @"BLE_FOUND" withMessage:messageString];
-    [connectedDevices removeObjectForKey:peripheral.identifier];
+    [myDBUtil createEvent: @"BLE_FOUND" withMessage:message];
+    [myDBUtil addHandshake:device];
+//    [connectedDevices removeObjectForKey:peripheral.identifier];
 }
 
 @end

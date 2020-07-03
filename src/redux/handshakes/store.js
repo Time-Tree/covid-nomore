@@ -1,6 +1,12 @@
 export const initialState = {
   handshakes: [],
-  lastUpdated: null
+  lastUpdated: null,
+  get_handshakes_pending: false,
+  get_handshakes_error: null,
+  delete_handshakes_pending: false,
+  delete_handshakes_error: null,
+  send_handshakes_pending: false,
+  send_handshakes_error: null
 };
 
 export const ActionTypes = {
@@ -8,5 +14,14 @@ export const ActionTypes = {
   CLEAR_HANSHAKES: 'CLEAR_HANSHAKES',
   SAVE_HANDSHAKES: 'SAVE_HANDSHAKES',
   CHANGE_HANDHAKE: 'CHANGE_HANDHAKE',
-  REMOVE_HANDSHAKE: 'REMOVE_HANDSHAKE'
+  REMOVE_HANDSHAKE: 'REMOVE_HANDSHAKE',
+  GET_HANDSHAKES: 'GET_HANDSHAKES',
+  GET_HANDSHAKES_SUCCESS: 'GET_HANDSHAKES_SUCCESS',
+  GET_HANDSHAKES_FAILED: 'GET_HANDSHAKES_FAILED',
+  DELETE_HANDSHAKES: 'DELETE_HANDSHAKES',
+  DELETE_HANDSHAKES_SUCCESS: 'DELETE_HANDSHAKES_SUCCESS',
+  DELETE_HANDSHAKES_FAILED: 'DELETE_HANDSHAKES_FAILED',
+  SEND_HANDSHAKES: 'SEND_HANDSHAKES',
+  SEND_HANDSHAKES_SUCCESS: 'SEND_HANDSHAKES_SUCCESS',
+  SEND_HANDSHAKES_FAILED: 'SEND_HANDSHAKES_FAILED'
 };

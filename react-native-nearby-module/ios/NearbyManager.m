@@ -14,7 +14,7 @@ static DBUtil *myDBUtil;
 
 - init {
     self = [super init];
-    myDBUtil = [[DBUtil alloc] init];
+    myDBUtil = [DBUtil sharedInstance];
     return self;
 }
 

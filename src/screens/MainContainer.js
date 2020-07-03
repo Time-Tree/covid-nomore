@@ -6,7 +6,8 @@ import DeviceInfo from 'react-native-device-info';
 import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { WebView } from 'react-native-webview';
 import NearbyContainer from './NearbyContainer';
-import HandshakesContainer from './HandshakesContainer';
+import TokensContainer from './TokensContainer';
+import StatusContainer from './StatusContainer';
 import NavbarComponent from './components/NavbarComponent';
 
 function HomeScreen() {
@@ -30,12 +31,12 @@ const screenOptions = ({ route }) => ({
     let iconName;
     if (route.name === 'Home') {
       iconName = focused ? 'home' : 'home-outline';
-    } else if (route.name === 'Nearby Handshakes') {
+    } else if (route.name === 'Tokens') {
       iconName = focused ? 'account-search' : 'account-search-outline';
-    } else if (route.name === 'Nearby Logs') {
-      iconName = focused
-        ? 'format-list-numbered-rtl'
-        : 'format-list-numbered-rtl';
+    } else if (route.name === 'Logs') {
+      iconName = 'format-list-numbered-rtl';
+    } else if (route.name === 'Status') {
+      iconName = 'account-check-outline';
     }
     return <MaterialCommunityIcon name={iconName} size={size} color={color} />;
   }
@@ -62,8 +63,9 @@ export default function MainContainer() {
         }}
       >
         <Tab.Screen name="Home" component={HomeScreen} />
-        <Tab.Screen name="Nearby Handshakes" component={HandshakesContainer} />
-        <Tab.Screen name="Nearby Logs" component={NearbyContainer} />
+        <Tab.Screen name="Status" component={StatusContainer} />
+        <Tab.Screen name="Tokens" component={TokensContainer} />
+        <Tab.Screen name="Logs" component={NearbyContainer} />
       </Tab.Navigator>
     </NavigationContainer>
   );

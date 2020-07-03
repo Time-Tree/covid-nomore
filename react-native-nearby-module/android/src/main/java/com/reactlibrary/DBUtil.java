@@ -4,6 +4,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.util.Log;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -13,6 +14,7 @@ public class DBUtil {
 
     private static DBUtil sharedInstance;
     private DBManager dbManager;
+    private String TAG = "DBUtil";
 
     public static synchronized DBUtil getInstance(Context context) {
         if (sharedInstance == null) {
@@ -82,5 +84,104 @@ public class DBUtil {
             e.printStackTrace();
             // do something
         }
+    }
+
+    public synchronized long addToken(String token) {
+        long newRowId = -1;
+        Long timestamp = Calendar.getInstance().getTimeInMillis();
+        try {
+            SQLiteDatabase db = dbManager.getWritableDatabase();
+            ContentValues values = new ContentValues();
+            values.put(TokenContract.TokenEntry.COLUMN_NAME_TOKEN, token);
+            values.put(TokenContract.TokenEntry.COLUMN_NAME_CREATED, timestamp);
+            values.put(TokenContract.TokenEntry.COLUMN_NAME_USED, 0);
+            newRowId = db.insert(TokenContract.TokenEntry.TABLE_NAME, null, values);
+            db.close();
+        } catch (Error e) {
+            e.printStackTrace();
+        }
+        Log.i(TAG, "newRowId: " + newRowId);
+        return newRowId;
+    }
+
+    public synchronized long updateTokenUsed(String token) {
+        int nRowsEffected = -1;
+        Log.i(TAG, "updateTokenUsed with token: " + token);
+        try {
+            SQLiteDatabase db = dbManager.getWritableDatabase();
+            ContentValues values = new ContentValues();
+            values.put(TokenContract.TokenEntry.COLUMN_NAME_USED, 1);
+            nRowsEffected = db.update(TokenContract.TokenEntry.TABLE_NAME, values,
+                    TokenContract.TokenEntry.COLUMN_NAME_TOKEN + " = ?", new String[] { token });
+            db.close();
+        } catch (Error e) {
+            e.printStackTrace();
+        }
+        Log.i(TAG, "nRowsEffected: " + nRowsEffected);
+        return nRowsEffected;
+    }
+
+    public synchronized ContentValues getLastToken() {
+        ContentValues response = new ContentValues();
+        try {
+            SQLiteDatabase db = dbManager.getReadableDatabase();
+            String query = "SELECT " + TokenContract.TokenEntry.COLUMN_NAME_TOKEN + ", "
+                    + TokenContract.TokenEntry.COLUMN_NAME_CREATED + " FROM " + TokenContract.TokenEntry.TABLE_NAME;
+            query += " ORDER BY " + TokenContract.TokenEntry.COLUMN_NAME_CREATED + " DESC LIMIT 1";
+            Cursor c = db.rawQuery(query, null);
+            if (c.moveToFirst()) {
+                response.put(TokenContract.TokenEntry.COLUMN_NAME_TOKEN, c.getString(0));
+                response.put(TokenContract.TokenEntry.COLUMN_NAME_CREATED, c.getLong(1));
+            }
+            c.close();
+            db.close();
+        } catch (Error e) {
+            Log.e(TAG, "error = " + e.getMessage());
+            e.printStackTrace();
+        }
+        return response;
+    }
+
+    public synchronized long addHandshake(ContentValues data) {
+        Log.i(TAG, "addHandshake " + data);
+        long newRowId = -1;
+        String token = data.getAsString("token");
+        Long timestamp = Calendar.getInstance().getTimeInMillis();
+        try {
+            SQLiteDatabase db = dbManager.getWritableDatabase();
+            ContentValues values = new ContentValues();
+            values.put(HandshakeContract.HandshakeEntry.COLUMN_NAME_TOKEN, token);
+            values.put(HandshakeContract.HandshakeEntry.COLUMN_NAME_DISCOVERED, timestamp);
+            values.put(HandshakeContract.HandshakeEntry.COLUMN_NAME_RSSI, data.getAsString("rssi"));
+            values.put(HandshakeContract.HandshakeEntry.COLUMN_NAME_DATA, data.getAsString("characteristicData"));
+            int nRowsEffected = db.update(HandshakeContract.HandshakeEntry.TABLE_NAME, values,
+                    HandshakeContract.HandshakeEntry.COLUMN_NAME_TOKEN + " = ?", new String[] { token });
+            Log.i(TAG, "nRowsEffected = " + nRowsEffected);
+            if (nRowsEffected == 0) {
+                newRowId = db.insert(HandshakeContract.HandshakeEntry.TABLE_NAME, null, values);
+            }
+            db.close();
+        } catch (Error e) {
+            e.printStackTrace();
+        }
+        Log.i(TAG, "newRowId: " + newRowId);
+        return newRowId;
+    }
+
+    public synchronized long updateCharacteristicData(String token) {
+        int nRowsEffected = -1;
+        Log.i(TAG, "updateCharacteristicData with token: " + token);
+        try {
+            SQLiteDatabase db = dbManager.getWritableDatabase();
+            ContentValues values = new ContentValues();
+            values.put(HandshakeContract.HandshakeEntry.COLUMN_NAME_DATA, 1);
+            nRowsEffected = db.update(HandshakeContract.HandshakeEntry.TABLE_NAME, values,
+                    HandshakeContract.HandshakeEntry.COLUMN_NAME_TOKEN + " = ?", new String[] { token });
+            db.close();
+        } catch (Error e) {
+            e.printStackTrace();
+        }
+        Log.i(TAG, "nRowsEffected: " + nRowsEffected);
+        return nRowsEffected;
     }
 }

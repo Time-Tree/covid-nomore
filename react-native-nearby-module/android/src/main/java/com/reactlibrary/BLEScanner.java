@@ -4,6 +4,7 @@ import android.app.Application;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
+import android.content.ContentValues;
 import android.content.Context;
 import android.os.Build;
 import android.util.Log;
@@ -144,9 +145,6 @@ public class BLEScanner {
                 for (BluetoothGattCharacteristic characteristic : characteristics) {
                     Log.i(TAG, "characteristic " + characteristic.getUuid());
                     String uuid = characteristic.getUuid().toString();
-                    if (uuid.substring(18).equals("-0000-000000000000")) {
-                        uuid = uuid.substring(0, 18);
-                    }
                     String message = "";
                     if (bleDevice.getName() != null) {
                         message += "NM: " + bleDevice.getName() + ",";
@@ -160,30 +158,34 @@ public class BLEScanner {
                     }
                     dbHelper.addEvent("BLE_FOUND", message);
                     foundDevices.put(macAddress, Calendar.getInstance().getTimeInMillis());
+
+                    ContentValues values = new ContentValues();
+                    values.put("token", uuid);
+                    values.put("rssi", deviceRSSI);
+                    values.put("characteristicData", 0);
+                    dbHelper.addHandshake(values);
                     bleManager.read(bleDevice, appIdentifier, appIdentifier, new BleReadCallback() {
                         @Override
                         public void onReadSuccess(byte[] data) {
                             try {
-                                Log.i(TAG, "-----> onReadSuccess");
+                                Log.i(TAG, "onReadSuccess");
                                 String uniqueIdentifier = new String(data, "UTF-8");
                                 String message = "Characteristic data found. ID: " + uniqueIdentifier;
                                 dbHelper.addEvent("BLE_DATA_FOUND", message);
+                                dbHelper.updateCharacteristicData(uniqueIdentifier);
                             } catch (UnsupportedEncodingException e) {
                                 e.printStackTrace();
-                                Log.i(TAG, "-----> onReadSuccess catch" + e.getMessage());
+                                Log.i(TAG, "onReadSuccess catch" + e.getMessage());
                             }
                             bleManager.disconnect(bleDevice);
                             checkPendingConections();
-
                         }
 
                         @Override
                         public void onReadFailure(BleException exception) {
-                            Log.i(TAG,
-                                    "-----> onReadFailure: " + exception.getDescription() + " " + exception.getCode());
+                            Log.i(TAG, "onReadFailure: " + exception.getDescription() + " " + exception.getCode());
                             bleManager.disconnect(bleDevice);
                             checkPendingConections();
-
                         }
                     });
                 }

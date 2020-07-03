@@ -5,12 +5,20 @@ static DBManager *myDBManager;
 
 @implementation DBUtil
 
-- (instancetype) init {
-    self = [super init];
-    myDBManager = [[DBManager alloc] init];
-    return self;
++ (id) sharedInstance {
+    static DBUtil *sharedInstance = nil;
+    @synchronized(self) {
+        if (sharedInstance == nil)
+            sharedInstance = [[self alloc] init];
+    }
+    return sharedInstance;
 }
 
+- (instancetype) init {
+    self = [super init];
+    myDBManager = [DBManager sharedInstance];
+    return self;
+}
 
 - (void) createEvent:(nonnull NSString*)eventType withMessage:(nonnull NSString*) message {
     NSLog(@"createEvent: eventType=%@ message=%@", eventType, message);
@@ -39,6 +47,34 @@ static DBManager *myDBManager;
 
 - (NSDictionary *) getSettingsData {
     return [myDBManager getSettingsData];
+}
+
+- (NSDictionary *) getLastToken {
+    return [myDBManager getLastToken];
+}
+
+- (void) addToken:(nonnull NSString*)token {
+    NSLog(@"addToken: token=%@", token);
+    NSTimeInterval timestamp = [[NSDate date] timeIntervalSince1970];
+    NSNumber *timestampObj = [NSNumber numberWithLong:timestamp * 1000.0];
+    NSDictionary *dict = @{
+        @"token": token,
+        @"created": timestampObj,
+        @"used": @0
+    };
+    NSLog(@"dict = %@", dict);
+    [myDBManager saveToken: dict];
+}
+
+- (void) addHandshake: (NSDictionary *) data {
+    NSTimeInterval timestamp = [[NSDate date] timeIntervalSince1970];
+    NSNumber *timestampObj = [NSNumber numberWithLong:timestamp * 1000.0];
+    [data setValue:timestampObj forKey:@"discovered"];
+    [myDBManager saveHandshake:data];
+}
+
+- (void) updateTokenUsed: (NSString *) token {
+    [myDBManager updateTokenUsed:token];
 }
 
 @end

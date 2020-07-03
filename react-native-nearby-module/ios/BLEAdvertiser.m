@@ -3,16 +3,17 @@
 
 static DBUtil *myDBUtil;
 static NSString * const appIdentifier = @"a9ecdb59-974e-43f0-9d93-27d5dcb060d6";
-static NSString *uniqueIdentifier;
+static NSString *currentToken;
 static NSMutableDictionary *handshakeDevices;
+static int TOKEN_EXPIRATION = 5 * 60 * 1000.0;
+
 
 @implementation BLEAdvertiser
 
 - (instancetype) init {
     self = [super init];
     self.peripheralManager = [[CBPeripheralManager alloc] initWithDelegate:self queue:nil options:@{CBPeripheralManagerOptionShowPowerAlertKey: @NO}];
-    myDBUtil = [[DBUtil alloc] init];
-    uniqueIdentifier = [[[UIDevice currentDevice] identifierForVendor] UUIDString];
+    myDBUtil = [DBUtil sharedInstance];
     handshakeDevices = [[NSMutableDictionary alloc] init];
     return self;
 }
@@ -49,6 +50,23 @@ static NSMutableDictionary *handshakeDevices;
     }
 }
 
+- (void) setToken {
+    NSLog(@"setToken");
+    NSDictionary *response = [myDBUtil getLastToken];
+    NSString *token = [response valueForKey:@"token"];
+    long created = [[response valueForKey:@"created"] longValue];
+    
+    NSTimeInterval timestamp = [[NSDate date] timeIntervalSince1970];
+    long timestampMiliseconds = timestamp * 1000.0;
+    if([token length] > 0 && created + TOKEN_EXPIRATION > timestampMiliseconds) {
+        currentToken = token;
+    } else {
+        NSString *uuid = [[NSUUID UUID] UUIDString];
+        [myDBUtil addToken:uuid];
+        currentToken = uuid;
+    }
+}
+
 - (void) restartAdvertising {
     [self.peripheralManager stopAdvertising];
     [self performSelector:@selector(startAdvertising) withObject:nil afterDelay:5];
@@ -71,7 +89,8 @@ static NSMutableDictionary *handshakeDevices;
         return;
     }
     [self.peripheralManager removeAllServices];
-    CBMutableCharacteristic *characteristic = [[CBMutableCharacteristic alloc] initWithType:[CBUUID UUIDWithString:uniqueIdentifier]
+    [self setToken];
+    CBMutableCharacteristic *characteristic = [[CBMutableCharacteristic alloc] initWithType:[CBUUID UUIDWithString:currentToken]
                                                                                  properties:CBCharacteristicPropertyRead
                                                                                       value:nil
                                                                                 permissions:CBAttributePermissionsReadable];
@@ -113,7 +132,7 @@ static NSMutableDictionary *handshakeDevices;
     } else {
         [self sendNotification:@"peripheralManagerDidStartAdvertising"];
         NSLog(@"Start advertising success");
-        NSString *message = [NSString stringWithFormat: @"Start advertising success with UUID: %@", uniqueIdentifier];
+        NSString *message = [NSString stringWithFormat: @"Start advertising success with UUID: %@", currentToken];
         [myDBUtil createEvent: @"BLE_ADVERTISER" withMessage:message];
     }
 }
@@ -125,17 +144,14 @@ static NSMutableDictionary *handshakeDevices;
 
 - (void)peripheralManager:(CBPeripheralManager *)peripheral didReceiveReadRequest:(CBATTRequest *)request {
     NSLog(@"didReceiveReadRequest: %@ %@", request.central, request.characteristic.UUID);
-    if ([request.characteristic.UUID isEqual:[CBUUID UUIDWithString:appIdentifier]]) {
-        request.value = [uniqueIdentifier dataUsingEncoding:NSUTF8StringEncoding];
-        [self.peripheralManager respondToRequest:request withResult:CBATTErrorSuccess];
-        NSNumber *handshakeTime = [handshakeDevices objectForKey:request.central.identifier];
-        if(!handshakeTime) {
-            NSString *message = [NSString stringWithFormat: @"Device %@ tried to read my characteristic", request.central.identifier];
-            [myDBUtil createEvent: @"BLE_ADVERTISER" withMessage:message];
-            [handshakeDevices setObject:[NSNumber numberWithLong:[[NSDate date] timeIntervalSince1970]] forKey:request.central.identifier];
-        }
-    } else {
-        NSLog(@"didReceiveReadRequest. Ignoring!");
+    request.value = [currentToken dataUsingEncoding:NSUTF8StringEncoding];
+    [self.peripheralManager respondToRequest:request withResult:CBATTErrorSuccess];
+    NSNumber *handshakeTime = [handshakeDevices objectForKey:request.central.identifier];
+    if(!handshakeTime) {
+        NSString *message = [NSString stringWithFormat: @"Device %@ tried to read my characteristic", request.central.identifier];
+        [myDBUtil createEvent: @"BLE_ADVERTISER" withMessage:message];
+        [myDBUtil updateTokenUsed:currentToken];
+        [handshakeDevices setObject:[NSNumber numberWithLong:[[NSDate date] timeIntervalSince1970]] forKey:request.central.identifier];
     }
 }
 

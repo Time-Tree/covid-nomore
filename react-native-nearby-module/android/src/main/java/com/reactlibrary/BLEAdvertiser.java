@@ -4,7 +4,6 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
-import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattServer;
 import android.bluetooth.BluetoothGattServerCallback;
 import android.bluetooth.BluetoothGattService;
@@ -13,14 +12,15 @@ import android.bluetooth.le.AdvertiseCallback;
 import android.bluetooth.le.AdvertiseData;
 import android.bluetooth.le.AdvertiseSettings;
 import android.bluetooth.le.BluetoothLeAdvertiser;
+import android.content.ContentValues;
 import android.content.Context;
 import android.os.Build;
 import android.os.ParcelUuid;
-import android.provider.Settings.Secure;
 import android.util.Base64;
 import android.util.Log;
 
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.UUID;
 
 import androidx.annotation.RequiresApi;
@@ -37,14 +37,14 @@ public class BLEAdvertiser {
     private boolean advertising;
     private Context context;
     private final String appIdentifier = "a9ecdb59-974e-43f0-9d93-27d5dcb060d6";
-    private String uniqueIdentifier;
+    private String currentToken;
+    static int TOKEN_EXPIRATION = 5 * 60 * 1000;
 
     public BLEAdvertiser(Context context) {
         super();
         this.context = context;
         this.dbHelper = DBUtil.getInstance(context);
         this.advertising = false;
-        this.uniqueIdentifier = Secure.getString(context.getContentResolver(), Secure.ANDROID_ID);
     }
 
     private final BluetoothGattServerCallback mGattServerCallback = new BluetoothGattServerCallback() {
@@ -69,6 +69,7 @@ public class BLEAdvertiser {
             super.onCharacteristicReadRequest(device, requestId, offset, characteristic);
             Log.w(TAG, "Device tried to read characteristic: " + characteristic.getUuid());
             dbHelper.addEvent("BLE_ADVERTISER", "Device " + device.getAddress() + " tried to read my characteristic");
+            dbHelper.updateTokenUsed(characteristic.getUuid().toString());
             Log.w(TAG, "Value: " + Arrays.toString(characteristic.getValue()));
 
             if (offset != 0) {
@@ -98,11 +99,21 @@ public class BLEAdvertiser {
                         characteristic.getValue());
             }
         }
-
     };
 
-    private String convertIdToUUID(String id) {
-        return id.substring(0, 8) + '-' + id.substring(8, 12) + '-' + id.substring(12) + "-0000-000000000000";
+    private void setToken() {
+        ContentValues response = dbHelper.getLastToken();
+        String token = response.getAsString("token");
+        Long created = response.getAsLong("created");
+        Long timestamp = Calendar.getInstance().getTimeInMillis();
+        if (token != null && token.length() > 0 && created + TOKEN_EXPIRATION > timestamp) {
+            currentToken = token;
+        } else {
+            String uuid = UUID.randomUUID().toString();
+            dbHelper.addToken(uuid);
+            currentToken = uuid;
+        }
+        Log.i(TAG, "currentToken = " + currentToken);
     }
 
     private boolean addService() {
@@ -111,15 +122,15 @@ public class BLEAdvertiser {
         UUID SERVICE_UUID = UUID.fromString(this.appIdentifier);
         BluetoothGattService mGattService = new BluetoothGattService(SERVICE_UUID,
                 BluetoothGattService.SERVICE_TYPE_PRIMARY);
-        String characteristicId = this.convertIdToUUID(this.uniqueIdentifier);
-        UUID CHARACTERISTIC_UUID = UUID.fromString(characteristicId);
+        UUID CHARACTERISTIC_UUID = UUID.fromString(currentToken);
 
         BluetoothGattCharacteristic mGattCharacteristic = new BluetoothGattCharacteristic(CHARACTERISTIC_UUID,
                 BluetoothGattCharacteristic.PROPERTY_READ, BluetoothGattCharacteristic.PERMISSION_READ);
-        BluetoothGattDescriptor bluetoothGattDescriptor = new BluetoothGattDescriptor(
-                UUID.fromString(convertIdToUUID(uniqueIdentifier)), BluetoothGattCharacteristic.PERMISSION_READ);
-        mGattCharacteristic.addDescriptor(bluetoothGattDescriptor);
-        mGattCharacteristic.setValue(this.uniqueIdentifier);
+        Log.w(TAG, "BlePeripheral mGattCharacteristic: " + currentToken);
+//        BluetoothGattDescriptor bluetoothGattDescriptor = new BluetoothGattDescriptor(
+//                UUID.fromString(currentToken), BluetoothGattCharacteristic.PERMISSION_READ);
+//        mGattCharacteristic.addDescriptor(bluetoothGattDescriptor);
+        mGattCharacteristic.setValue(currentToken);
         mGattService.addCharacteristic(mGattCharacteristic);
 
         return mGattServer.addService(mGattService);
@@ -155,7 +166,7 @@ public class BLEAdvertiser {
         mGattServer = mBluetoothManager.openGattServer(this.context, mGattServerCallback);
 
         if (mGattServer != null && advertiser != null) {
-
+            setToken();
             boolean addedFlag = this.addService();
             if (!addedFlag) {
                 Log.e(TAG, "add service failed");
@@ -166,7 +177,7 @@ public class BLEAdvertiser {
                         .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH).build();
 
                 AdvertiseData data = new AdvertiseData.Builder().setIncludeDeviceName(false)
-                        .addServiceUuid(new ParcelUuid(UUID.fromString(this.appIdentifier))).build();
+                        .addServiceUuid(new ParcelUuid(UUID.fromString(appIdentifier))).build();
 
                 advertisingCallback = new AdvertiseCallback() {
                     @Override
@@ -174,7 +185,7 @@ public class BLEAdvertiser {
                         super.onStartSuccess(settingsInEffect);
                         advertising = true;
                         Log.w(TAG, "Started Advertising " + settingsInEffect);
-                        dbHelper.addEvent("BLE_ADVERTISER", "Start advertising success with UUID: " + uniqueIdentifier);
+                        dbHelper.addEvent("BLE_ADVERTISER", "Start advertising success with UUID: " + currentToken);
                     }
 
                     @Override

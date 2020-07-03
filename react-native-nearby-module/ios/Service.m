@@ -31,7 +31,7 @@ static int NEARBY_DURATION = 1 * 60.0;
               UIUserNotificationTypeAlert | UIUserNotificationTypeBadge | UIUserNotificationTypeSound
                                                categories:nil]];
         }
-        myDBUtil = [[DBUtil alloc] init];
+        myDBUtil = [DBUtil sharedInstance];
         myBLEScanner = [[BLEScanner alloc] init];
         myBLEAdvertiser = [[BLEAdvertiser alloc] init];
         myNearbyManager = [[NearbyManager alloc] init];

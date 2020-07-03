@@ -4,11 +4,13 @@ import { combineReducers } from 'redux';
 import settingsReducer from './settings/reducer';
 import eventsReducer from './events/reducer';
 import handshakesReducer from './handshakes/reducer';
+import tokensReducer from './tokens/reducer';
 
 const rootReducer = combineReducers({
   settings: settingsReducer,
   events: eventsReducer,
-  handshakes: handshakesReducer
+  handshakes: handshakesReducer,
+  tokens: tokensReducer
 });
 
 export default rootReducer;
