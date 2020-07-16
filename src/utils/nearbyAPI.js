@@ -21,7 +21,6 @@ class NearbyAPI {
 
   nearbyCheck() {
     this.getEvents();
-    this.getStatus();
   }
 
   getEvents = async () => {
@@ -104,13 +103,6 @@ class NearbyAPI {
         await db.close();
       }
     }
-  };
-
-  getStatus = async () => {
-    try {
-      const response = await NearbyModule.getStatus();
-      store.dispatch(settingsActions.changeStatusAction(response));
-    } catch (error) {}
   };
 
   clearEvents = async () => {
@@ -203,8 +195,36 @@ class NearbyAPI {
       console.log('Saving new status', type, status);
       const query = `UPDATE Settings SET ${type} = ${status} WHERE _ID = 1`;
       await db.executeSql(query);
+      store.dispatch(settingsActions.setProcessAction(type, !!status));
     } catch (error) {
       console.log('setToggle error', error);
+    } finally {
+      if (db) {
+        await db.close();
+      }
+    }
+    NearbyModule.restartService();
+  };
+
+  setNativeProcess = async status => {
+    let db;
+    try {
+      SQLite.enablePromise(true);
+      if (Platform.OS === 'android') {
+        db = await SQLite.openDatabase('NearbyEvents');
+      } else {
+        db = await SQLite.openDatabase({
+          name: 'NearbyEvents.sqlite',
+          location: 'Documents'
+        });
+      }
+      console.log('Update native process', status);
+      const query = `UPDATE Settings SET bleProcess = ${status}, nearbyProcess = ${status} WHERE _ID = 1`;
+      await db.executeSql(query);
+      store.dispatch(settingsActions.setNearbyProcessAction(!!status));
+      store.dispatch(settingsActions.setBleProcessAction(!!status));
+    } catch (error) {
+      console.log('setNativeProcess error', error);
     } finally {
       if (db) {
         await db.close();

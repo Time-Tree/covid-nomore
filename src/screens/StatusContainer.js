@@ -1,77 +1,114 @@
 import React, { useCallback, useState } from 'react';
 import {
-  View,
   Text,
-  ActivityIndicator,
-  FlatList,
   StyleSheet,
-  TouchableOpacity
+  TouchableOpacity,
+  View,
+  ActivityIndicator
 } from 'react-native';
 import reduxContainer from '../redux/reduxContainer';
 import NavbarComponent from './components/NavbarComponent';
 import tokenActions from '../redux/tokens/actions';
 import handshakesActions from '../redux/handshakes/actions';
 import { getIntersection } from '../utils/psi';
+import { DEVICE_WIDTH } from '../utils/deviceHelper';
+import settingsActions from '../redux/settings/actions';
 
 const StatusContainer = props => {
-  // 0 healthy, 1 infected, 2 possibly infected
-  const [status, setStatus] = useState(0);
-  const { tokens, sendTokensAction, handshakes, sendHandshakesAction } = props;
+  const { status, sendHandshakesAction, changeStatusAction } = props;
   const statuses = ['Healthy', 'Infected', 'Exposed'];
 
-  const handleInfected = useCallback(() => {
-    sendTokensAction(tokens);
-    setStatus(1);
-  }, [sendTokensAction, tokens]);
-
   const checkExposure = useCallback(() => {
-    sendHandshakesAction(handshakes)
+    sendHandshakesAction()
       .then(data => getIntersection(data))
       .then(aaa => {
         if (aaa > 0) {
-          setStatus(2);
+          changeStatusAction(2);
         }
       });
-  }, [handshakes, sendHandshakesAction]);
+  }, [sendHandshakesAction, changeStatusAction]);
 
   return (
     <>
-      <NavbarComponent title="Status" />
-      <Text>
-        My status is <Text>{statuses[status]}</Text>
-      </Text>
-      <TouchableOpacity style={styles.button} onPress={handleInfected}>
-        <Text> I'm infected </Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.button} onPress={checkExposure}>
-        <Text> Check exposure </Text>
-      </TouchableOpacity>
+      <NavbarComponent title="Health" />
+      <View
+        style={[{ backgroundColor: colors[status] }, styles.statusContainer]}
+      >
+        <Text style={styles.status}>STATUS:</Text>
+        <Text style={styles.status}>{statuses[status]}</Text>
+      </View>
+      {props.pending ? (
+        <View style={styles.button}>
+          <ActivityIndicator color="darkblue" />
+        </View>
+      ) : (
+        <TouchableOpacity style={styles.button} onPress={checkExposure}>
+          <Text style={styles.textButton}> Check exposure </Text>
+        </TouchableOpacity>
+      )}
     </>
   );
 };
 
+const colors = ['#1db87f', '#b81d1d', '#5939cc'];
+
 const styles = StyleSheet.create({
+  status: {
+    color: 'white',
+    textAlign: 'center',
+    fontWeight: 'bold',
+    fontSize: 25
+  },
   button: {
-    padding: 30,
-    marginHorizontal: 50,
-    marginVertical: 10,
-    backgroundColor: 'lightgray',
-    borderRadius: 50,
+    borderRadius: 10,
+    width: 200,
+    height: 45,
+    marginVertical: 25,
+    backgroundColor: '#f7f8fc',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    alignSelf: 'center',
     alignItems: 'center',
     justifyContent: 'center'
+  },
+  statusContainer: {
+    borderRadius: DEVICE_WIDTH * 0.7,
+    marginVertical: 50,
+    width: DEVICE_WIDTH * 0.7,
+    height: DEVICE_WIDTH * 0.7,
+    alignSelf: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5
+  },
+  textButton: {
+    color: 'darkblue'
   }
 });
 
 function mapStateToProps(state) {
   return {
-    tokens: state.tokens.tokens,
-    handshakes: state.handshakes.handshakes
+    status: state.settings.status,
+    pending: state.handshakes.send_handshakes_pending
   };
 }
 
 const dispatchToProps = {
-  sendTokensAction: tokenActions.sendTokensAction,
-  sendHandshakesAction: handshakesActions.sendHandshakesAction
+  sendHandshakesAction: handshakesActions.sendHandshakesAction,
+  changeStatusAction: settingsActions.changeStatusAction
 };
 
 export default reduxContainer(
