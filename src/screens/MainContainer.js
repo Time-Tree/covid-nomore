@@ -8,6 +8,7 @@ import { WebView } from 'react-native-webview';
 import NearbyContainer from './NearbyContainer';
 import TokensContainer from './TokensContainer';
 import StatusContainer from './StatusContainer';
+import ChatContainer from './ChatContainer';
 import NavbarComponent from './components/NavbarComponent';
 
 function HomeScreen() {
@@ -37,6 +38,8 @@ const screenOptions = ({ route }) => ({
       iconName = 'format-list-numbered-rtl';
     } else if (route.name === 'Status') {
       iconName = 'account-check-outline';
+    } else if (route.name === 'Chat') {
+      iconName = 'chat-outline';
     }
     return <MaterialCommunityIcon name={iconName} size={size} color={color} />;
   }
@@ -66,6 +69,7 @@ export default function MainContainer() {
         <Tab.Screen name="Status" component={StatusContainer} />
         <Tab.Screen name="Tokens" component={TokensContainer} />
         <Tab.Screen name="Logs" component={NearbyContainer} />
+        <Tab.Screen name="Chat" component={ChatContainer} />
       </Tab.Navigator>
     </NavigationContainer>
   );
