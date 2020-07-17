@@ -4,8 +4,8 @@ export const initialState = {
   status: 0,
   clientId: null,
   easterEgg: false,
-  bleProcess: false,
-  nearbyProcess: false
+  bleProcess: true,
+  nearbyProcess: true
 };
 
 export const ActionTypes = {

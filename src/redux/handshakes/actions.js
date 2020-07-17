@@ -1,6 +1,5 @@
 import { ActionTypes } from './store';
 import { getHandshakes, deleteHandshakes } from '../../utils/tokens';
-import { getRequest } from '../../utils/psi';
 import request from '../../utils/server';
 
 class HandshakeActions {
@@ -54,16 +53,18 @@ class HandshakeActions {
         const foundHandshakes = handshakes
           .map(item => item.token?.toUpperCase())
           .filter(item => item !== undefined);
-        const clientRequest = await getRequest(foundHandshakes);
-        const response = await request('post', 'check-infection', {
-          clientRequest,
-          num: foundHandshakes.length
-        });
+        let response = {};
+        if (foundHandshakes.length) {
+          response = await request('post', 'check-infection-server', {
+            tokens: foundHandshakes,
+            num: foundHandshakes.length
+          });
+        }
         dispatch({
           type: ActionTypes.SEND_HANDSHAKES_SUCCESS,
-          payload: response.data
+          payload: response
         });
-        return response.data;
+        return response;
       } catch (error) {
         dispatch({
           type: ActionTypes.SEND_HANDSHAKES_FAILED,

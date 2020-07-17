@@ -8,24 +8,24 @@ import {
 } from 'react-native';
 import reduxContainer from '../redux/reduxContainer';
 import NavbarComponent from './components/NavbarComponent';
-import tokenActions from '../redux/tokens/actions';
 import handshakesActions from '../redux/handshakes/actions';
-import { getIntersection } from '../utils/psi';
 import { DEVICE_WIDTH } from '../utils/deviceHelper';
 import settingsActions from '../redux/settings/actions';
 
 const StatusContainer = props => {
   const { status, sendHandshakesAction, changeStatusAction } = props;
+  const [sent, setSent] = useState(false);
   const statuses = ['Healthy', 'Infected', 'Exposed'];
 
   const checkExposure = useCallback(() => {
     sendHandshakesAction()
-      .then(data => getIntersection(data))
       .then(aaa => {
-        if (aaa > 0) {
+        if (aaa?.data?.intersection) {
           changeStatusAction(2);
         }
-      });
+      })
+      .catch(error => console.log('error', error))
+      .finally(() => setSent(true));
   }, [sendHandshakesAction, changeStatusAction]);
 
   return (
@@ -45,6 +45,11 @@ const StatusContainer = props => {
         <TouchableOpacity style={styles.button} onPress={checkExposure}>
           <Text style={styles.textButton}> Check exposure </Text>
         </TouchableOpacity>
+      )}
+      {sent && props.error && (
+        <Text style={styles.errorText}>
+          An error occurred, please try again later.
+        </Text>
       )}
     </>
   );
@@ -96,13 +101,18 @@ const styles = StyleSheet.create({
   },
   textButton: {
     color: 'darkblue'
+  },
+  errorText: {
+    textAlign: 'center',
+    color: '#b81d1d'
   }
 });
 
 function mapStateToProps(state) {
   return {
     status: state.settings.status,
-    pending: state.handshakes.send_handshakes_pending
+    pending: state.handshakes.send_handshakes_pending,
+    error: state.handshakes.send_handshakes_error
   };
 }
 

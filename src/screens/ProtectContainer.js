@@ -1,30 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator
+} from 'react-native';
 import reduxContainer from '../redux/reduxContainer';
 import NavbarComponent from './components/NavbarComponent';
 import NearbyAPI from '../utils/nearbyAPI';
 
 const ProtectContainer = props => {
-  const [process, setProcess] = useState(
-    props.bleProcess && props.nearbyProcess
-  );
+  const [process, setProcess] = useState(props.bleProcess);
+  const [loading, setLoading] = useState(false);
 
   const buttonHandler = () => {
     const value = process ? 0 : 1;
-    setProcess(value);
-    NearbyAPI.setNativeProcess(value);
+    setLoading(true);
+    NearbyAPI.setToggle('bleProcess', value);
   };
 
   useEffect(() => {
-    setProcess(props.bleProcess && props.nearbyProcess);
-  }, [props.bleProcess, props.nearbyProcess]);
+    setProcess(props.bleProcess);
+    setLoading(false);
+  }, [props.bleProcess]);
 
   return (
     <>
       <NavbarComponent title="Protect" />
       <View style={styles.content}>
+        <Text style={styles.bigText}>
+          {process ? 'Protection activated' : 'Protection deactivated'}
+        </Text>
         <Text style={styles.headerText}>
-          Play an active role in fighting COVID-19.
+          Play an active role in fighting COVID-19!
         </Text>
         <Text style={styles.text}>
           Activate CovidNoMore to be informed and inform others about
@@ -34,17 +43,28 @@ const ProtectContainer = props => {
           You can activate or deactivate CovidNoMore at any time.
         </Text>
       </View>
-      <TouchableOpacity
-        style={[
-          styles.button,
-          process ? styles.activeButton : styles.deactiveButton
-        ]}
-        onPress={buttonHandler}
-      >
-        <Text style={styles.textButton}>
-          {process ? 'Deactivate CovidNoMore' : 'Activate CovidNoMore'}{' '}
-        </Text>
-      </TouchableOpacity>
+      {loading ? (
+        <View
+          style={[
+            styles.button,
+            process ? styles.activeButton : styles.deactiveButton
+          ]}
+        >
+          <ActivityIndicator color="white" />
+        </View>
+      ) : (
+        <TouchableOpacity
+          style={[
+            styles.button,
+            process ? styles.activeButton : styles.deactiveButton
+          ]}
+          onPress={buttonHandler}
+        >
+          <Text style={styles.textButton}>
+            {process ? 'Deactivate CovidNoMore' : 'Activate CovidNoMore'}{' '}
+          </Text>
+        </TouchableOpacity>
+      )}
     </>
   );
 };
@@ -55,8 +75,6 @@ const styles = StyleSheet.create({
   },
   headerText: {
     fontWeight: 'bold',
-    marginHorizontal: 50,
-    paddingVertical: 25,
     textAlign: 'center'
   },
   text: {
@@ -90,13 +108,19 @@ const styles = StyleSheet.create({
   },
   textButton: {
     color: 'white'
+  },
+  bigText: {
+    textAlign: 'center',
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginTop: 5,
+    marginBottom: 30
   }
 });
 
 function mapStateToProps(state) {
   return {
-    bleProcess: state.settings.bleProcess,
-    nearbyProcess: state.settings.nearbyProcess
+    bleProcess: state.settings.bleProcess
   };
 }
 
