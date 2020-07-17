@@ -1,5 +1,4 @@
 import { ActionTypes, initialState } from './store';
-import { act } from 'react-test-renderer';
 
 function chatReducer(state = initialState, action) {
   switch (action.type) {
@@ -8,6 +7,12 @@ function chatReducer(state = initialState, action) {
         ...state,
         authToken: action.authToken,
         userId: action.userId
+      };
+    }
+    case ActionTypes.MESSAGE_SENT: {
+      return {
+        ...state,
+        messages: [action.chatMessage, ...state.messages]
       };
     }
     case ActionTypes.BOT_RESPONSE_RECEIVED: {

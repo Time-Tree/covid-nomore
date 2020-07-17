@@ -15,7 +15,8 @@ const ChatContainer = props => {
   const isAuthenticated = useSelector(isAuthenticatedSelector);
 
   const dispatch = useDispatch();
-  const sendMessage = message => dispatch(getSendMessageAction(message));
+  const sendMessages = newMessages =>
+    newMessages.forEach(message => dispatch(getSendMessageAction(message)));
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -32,7 +33,7 @@ const ChatContainer = props => {
   const ChatComponent = (
     <GiftedChat
       messages={messages}
-      onSend={sendMessage}
+      onSend={sendMessages}
       user={{
         _id: 1
       }}

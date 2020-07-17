@@ -7,7 +7,6 @@ export const getAuthAction = (
   channel
 ) => async dispatch => {
   try {
-    console.log('### auth');
     const response = await axios.get(
       'https://builder.wisevoice.ai/api/registerAnonymous',
       {
@@ -32,7 +31,12 @@ export const getAuthenticatedAction = (authToken, userId) => ({
   userId
 });
 
-export const getSendMessageAction = message => async (dispatch, getState) => {
+export const getSendMessageAction = giftedChatMessage => async (
+  dispatch,
+  getState
+) => {
+  dispatch(getMessageSentAction(giftedChatMessage));
+
   try {
     const authToken = getState().chat.authToken;
     const response = await axios.post(
@@ -40,7 +44,7 @@ export const getSendMessageAction = message => async (dispatch, getState) => {
       '',
       {
         params: {
-          message_options: message.text,
+          message_options: giftedChatMessage.text,
           timezone: 'Europe/Bucharest',
           last_node: '0',
           language: 'ro',
@@ -53,9 +57,15 @@ export const getSendMessageAction = message => async (dispatch, getState) => {
     );
 
     const botResponse = response.data;
+
     console.log('~~~', botResponse);
   } catch (error) {}
 };
+
+export const getMessageSentAction = chatMessage => ({
+  type: ActionTypes.MESSAGE_SENT,
+  chatMessage
+});
 
 export const getResponseReceivedAction = response => ({
   type: ActionTypes.BOT_RESPONSE_RECEIVED,
