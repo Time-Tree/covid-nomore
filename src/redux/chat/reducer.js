@@ -1,4 +1,5 @@
 import { ActionTypes, initialState } from './store';
+import { formatGiftedChatMessage } from '../../utils/chat';
 
 function chatReducer(state = initialState, action) {
   switch (action.type) {
@@ -9,6 +10,12 @@ function chatReducer(state = initialState, action) {
         userId: action.userId
       };
     }
+    case ActionTypes.BOT_INIT_STARTED: {
+      return {
+        ...state,
+        latestInit: new Date().toISOString()
+      };
+    }
     case ActionTypes.MESSAGE_SENT: {
       return {
         ...state,
@@ -16,8 +23,11 @@ function chatReducer(state = initialState, action) {
       };
     }
     case ActionTypes.BOT_RESPONSE_RECEIVED: {
-      console.log(action.response);
-      return state;
+      const chatMessage = formatGiftedChatMessage(action.response);
+
+      return chatMessage
+        ? { ...state, messages: [chatMessage, ...state.messages] }
+        : state;
     }
     default:
       return state;

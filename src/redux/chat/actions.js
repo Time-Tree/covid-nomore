@@ -1,12 +1,15 @@
 import axios from 'axios';
 import { ActionTypes } from './store';
 
+import { WiseVoiceKey } from '../../../keys';
+
 export const getAuthAction = (
   projectId,
   clientKey,
   channel
 ) => async dispatch => {
   try {
+    console.log('LOGIN');
     const response = await axios.get(
       'https://builder.wisevoice.ai/api/registerAnonymous',
       {
@@ -21,7 +24,7 @@ export const getAuthAction = (
     const { token: authToken, user_id: userId } = response.data;
     dispatch(getAuthenticatedAction(authToken, userId));
   } catch (error) {
-    console.log(error);
+    console.error(error);
   }
 };
 
@@ -29,6 +32,56 @@ export const getAuthenticatedAction = (authToken, userId) => ({
   type: ActionTypes.AUTHENTICATED,
   authToken,
   userId
+});
+
+export const getInitBotAction = () => async (dispatch, getState) => {
+  try {
+    const latestInit = new Date(getState().chat.latestInit);
+    const now = new Date();
+
+    // Execute only once per day.
+    if (
+      latestInit !== null &&
+      latestInit.getDate() === now.getDate() &&
+      latestInit.getMonth() === now.getMonth()
+    ) {
+      return;
+    }
+
+    dispatch(getBotInitStartedAction());
+
+    // Authenticate and store access token
+    await dispatch(
+      getAuthAction(
+        WiseVoiceKey.projectId,
+        WiseVoiceKey.clientKey,
+        WiseVoiceKey.channel
+      )
+    );
+
+    const { authToken } = getState().chat;
+    const response = await axios.post(
+      'https://builder.wisevoice.ai/api/events/trigger',
+      '',
+      {
+        params: {
+          returnSyncResponse: 'True',
+          eventNodeTypeId: 1
+        },
+        headers: {
+          Authorization: `Bearer ${authToken}`
+        }
+      }
+    );
+
+    dispatch(getResponseReceivedAction(response.data));
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+export const getBotInitStartedAction = chatMessage => ({
+  type: ActionTypes.BOT_INIT_STARTED
 });
 
 export const getSendMessageAction = giftedChatMessage => async (
@@ -56,10 +109,10 @@ export const getSendMessageAction = giftedChatMessage => async (
       }
     );
 
-    const botResponse = response.data;
-
-    console.log('~~~', botResponse);
-  } catch (error) {}
+    dispatch(getResponseReceivedAction(response.data));
+  } catch (error) {
+    console.error(error);
+  }
 };
 
 export const getMessageSentAction = chatMessage => ({
