@@ -24,9 +24,10 @@ function chatReducer(state = initialState, action) {
     }
     case ActionTypes.BOT_RESPONSE_RECEIVED: {
       const chatMessage = formatGiftedChatMessage(action.response);
+      const lastNode = action.response.lastNode || 0;
 
       return chatMessage
-        ? { ...state, messages: [chatMessage, ...state.messages] }
+        ? { ...state, messages: [chatMessage, ...state.messages], lastNode }
         : state;
     }
     default:

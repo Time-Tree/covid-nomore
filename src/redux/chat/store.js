@@ -2,7 +2,8 @@ export const initialState = {
   messages: [],
   authToken: null,
   userId: null,
-  latestInit: null
+  latestInit: null,
+  lastNode: 0
 };
 
 export const ActionTypes = {
