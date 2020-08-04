@@ -65,7 +65,8 @@ function settingsReducer(state = initialState, action) {
     case ActionTypes.SEND_TOKENS: {
       return {
         ...state,
-        send_tokens_pending: true
+        send_tokens_pending: true,
+        send_tokens_error: null
       };
     }
     case ActionTypes.SEND_TOKENS_SUCCESS: {

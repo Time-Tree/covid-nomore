@@ -1,8 +1,6 @@
-import axios from 'axios';
 import { ActionTypes } from './store';
 import { getHandshakes, deleteHandshakes } from '../../utils/tokens';
-
-const API_URL = 'http://localhost:3100/';
+import request from '../../utils/server';
 
 class HandshakeActions {
   getHandshakesAction() {
@@ -45,17 +43,28 @@ class HandshakeActions {
     };
   }
 
-  sendHandshakesAction(handshakes) {
+  sendHandshakesAction() {
     return async dispatch => {
       dispatch({
         type: ActionTypes.SEND_HANDSHAKES
       });
       try {
-        const response = await axios.post(`${API_URL}infected`, handshakes);
+        const { handshakes } = await getHandshakes();
+        const foundHandshakes = handshakes
+          .map(item => item.token?.toUpperCase())
+          .filter(item => item !== undefined);
+        let response = {};
+        if (foundHandshakes.length) {
+          response = await request('post', 'check-infection-server', {
+            tokens: foundHandshakes,
+            num: foundHandshakes.length
+          });
+        }
         dispatch({
           type: ActionTypes.SEND_HANDSHAKES_SUCCESS,
           payload: response
         });
+        return response;
       } catch (error) {
         dispatch({
           type: ActionTypes.SEND_HANDSHAKES_FAILED,

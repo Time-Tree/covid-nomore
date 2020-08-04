@@ -116,7 +116,6 @@ static int NEARBY_DURATION = 1 * 60.0;
     [myNearbyManager checkAndConnect];
     [myNearbyManager subscribe];
     [myNearbyManager publish: code];
-    [self sendNotification:@"Start nearby timer task"];
     self.nearbyStopTimer = [NSTimer scheduledTimerWithTimeInterval: NEARBY_DURATION
                                                             target: self
                                                           selector: @selector(stopNearbyTimerTask)
@@ -125,7 +124,6 @@ static int NEARBY_DURATION = 1 * 60.0;
 
 - (void) stopNearbyTimerTask {
     NSLog(@"stopTimer");
-    [self sendNotification:@"STOP nearby timer task"];
     [myNearbyManager unpublish];
     [myNearbyManager unsubscribe];
 }
@@ -134,7 +132,6 @@ static int NEARBY_DURATION = 1 * 60.0;
     NSLog(@"startBLETimerTask");
     [myBLEScanner scan];
     [myBLEAdvertiser restartAdvertising];
-    [self sendNotification:@"Start BLE timer task"];
     self.bleStopTimer = [NSTimer scheduledTimerWithTimeInterval: BLE_DURATION
                                                          target: self
                                                        selector: @selector(stopBLETimerTask)
@@ -145,17 +142,10 @@ static int NEARBY_DURATION = 1 * 60.0;
     NSLog(@"stopBLETimerTask");
     [myBLEAdvertiser stopAdvertising];
     [myBLEScanner stopScan];
-    [self sendNotification:@"STOP BLE timer task"];
 }
 
 - (void) deleteAllData {
     [myDBUtil deleteAllData];
-}
-
-- (void) sendNotification:(NSString*) message {
-    UILocalNotification *localNotification = [[UILocalNotification alloc] init];
-    localNotification.alertBody = message;
-    [[UIApplication sharedApplication] presentLocalNotificationNow:localNotification];
 }
 
 @end

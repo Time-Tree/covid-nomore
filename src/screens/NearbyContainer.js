@@ -7,6 +7,7 @@ import NavbarComponent from './components/NavbarComponent';
 import SettingsModal from './SettingsModal';
 import 'react-native-console-time-polyfill';
 import NearbyApi from '../utils/nearbyAPI';
+import settingsActions from '../redux/settings/actions';
 
 class NearbyContainer extends React.Component {
   state = {
@@ -32,7 +33,6 @@ class NearbyContainer extends React.Component {
   };
 
   toggleHandler = type => value => {
-    console.log('toggleHandler', type, value);
     const { settings } = this.state;
     settings[type] = value;
     this.setState({ settings });
@@ -69,8 +69,16 @@ class NearbyContainer extends React.Component {
 
   keyExtractor = (item, index) => index.toString();
 
+  easterEggHandler = () => {
+    this.props.setEasterEggAction(false);
+  };
+
+  healthyHandler = () => {
+    this.props.changeStatusAction(0);
+  };
+
   render() {
-    const { events } = this.props;
+    const { events, status } = this.props;
     const { settingsVisible, settings } = this.state;
     return (
       <View style={styles.screen}>
@@ -87,6 +95,12 @@ class NearbyContainer extends React.Component {
             value={!!settings.nearbyProcess}
           />
           <Button title="settings" onPress={this.settingsHandler} />
+        </View>
+        <View style={styles.headerContainer}>
+          <Button title="Easter Egg" onPress={this.easterEggHandler} />
+          {status !== 0 && (
+            <Button title="Reset Status" onPress={this.healthyHandler} />
+          )}
         </View>
         <View style={styles.headerContainer}>
           <Text>LOGS:</Text>
@@ -109,14 +123,15 @@ class NearbyContainer extends React.Component {
 
 function mapStateToProps(state) {
   return {
-    isSubscribing: state.settings.isSubscribing,
-    isConnected: state.settings.isConnected,
+    status: state.settings.status,
     events: state.events.events
   };
 }
 
 const dispatchToProps = {
-  clearEventsAction: EventsActions.clearEventsAction
+  clearEventsAction: EventsActions.clearEventsAction,
+  setEasterEggAction: settingsActions.setEasterEggAction,
+  changeStatusAction: settingsActions.changeStatusAction
 };
 
 export default reduxContainer(

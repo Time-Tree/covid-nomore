@@ -74,7 +74,6 @@ static int TOKEN_EXPIRATION = 5 * 60 * 1000.0;
 }
 
 - (void) startAdvertising {
-    [self sendNotification:@"Start advertising"];
     
     CBManagerState state = [self.peripheralManager state];
     if(state == CBManagerStateUnauthorized) {
@@ -109,7 +108,6 @@ static int TOKEN_EXPIRATION = 5 * 60 * 1000.0;
 
 - (void) peripheralManager:(CBPeripheralManager *)peripheral didAddService:(CBService *)service error:(NSError *)error {
     NSLog(@"peripheralManagerDidAddService");
-    [self sendNotification:@"didAddService"];
     if (error) {
         NSLog(@"Error publishing service: %@", [error localizedDescription]);
         [myDBUtil createEvent: @"Error publishing service" withMessage:[error localizedDescription]];
@@ -125,12 +123,10 @@ static int TOKEN_EXPIRATION = 5 * 60 * 1000.0;
 - (void)peripheralManagerDidStartAdvertising:(CBPeripheralManager *)peripheral error:(NSError *)error {
     NSLog(@"peripheralManagerDidStartAdvertising: %@", peripheral.description);
     if (error) {
-        [self sendNotification:@"Error advertising"];
         NSLog(@"Error advertising: %@", [error localizedDescription]);
         NSString *message = [NSString stringWithFormat: @"Error advertising: %@", [error localizedDescription]];
         [myDBUtil createEvent: @"BLE_ADVERTISER_ERROR" withMessage:message];
     } else {
-        [self sendNotification:@"peripheralManagerDidStartAdvertising"];
         NSLog(@"Start advertising success");
         NSString *message = [NSString stringWithFormat: @"Start advertising success with UUID: %@", currentToken];
         [myDBUtil createEvent: @"BLE_ADVERTISER" withMessage:message];
@@ -153,13 +149,6 @@ static int TOKEN_EXPIRATION = 5 * 60 * 1000.0;
         [myDBUtil updateTokenUsed:currentToken];
         [handshakeDevices setObject:[NSNumber numberWithLong:[[NSDate date] timeIntervalSince1970]] forKey:request.central.identifier];
     }
-}
-
-
-- (void) sendNotification:(NSString*) message {
-    UILocalNotification *localNotification = [[UILocalNotification alloc] init];
-    localNotification.alertBody = message;
-    [[UIApplication sharedApplication] presentLocalNotificationNow:localNotification];
 }
 
 @end

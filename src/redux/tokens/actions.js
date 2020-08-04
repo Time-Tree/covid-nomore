@@ -1,8 +1,7 @@
-import axios from 'axios';
 import { ActionTypes } from './store';
 import { getTokens, deleteTokens } from '../../utils/tokens';
-
-const API_URL = 'http://localhost:3100/';
+import { store } from '../store';
+import request from '../../utils/server';
 
 class TokensActions {
   getTokensAction() {
@@ -45,16 +44,24 @@ class TokensActions {
     };
   }
 
-  sendTokensAction(tokens) {
+  sendTokensAction() {
     return async dispatch => {
       dispatch({
         type: ActionTypes.SEND_TOKENS
       });
       try {
-        const response = await axios.post(`${API_URL}infected`, tokens);
+        const client = store.getState().settings.clientId;
+        const { tokens } = await getTokens();
+        const foundTokens = tokens
+          .map(item => item.token?.toUpperCase())
+          .filter(item => item !== undefined);
+        const response = await request('post', 'infected', {
+          tokens: foundTokens,
+          client
+        });
         dispatch({
           type: ActionTypes.SEND_TOKENS_SUCCESS,
-          payload: response
+          payload: response.data
         });
       } catch (error) {
         dispatch({

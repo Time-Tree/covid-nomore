@@ -16,7 +16,7 @@ export async function getTokens() {
         location: 'Documents'
       });
     }
-    console.log('Fetching tokens from sync', sync);
+    console.log('Fetching tokens');
     const result = await db.executeSql(
       'SELECT * FROM Tokens ORDER BY created DESC'
     );
@@ -90,7 +90,7 @@ export async function getHandshakes() {
         location: 'Documents'
       });
     }
-    console.log('Fetching handshakes from sync', sync);
+    console.log('Fetching handshakes');
     const result = await db.executeSql(
       'SELECT * FROM Handshakes ORDER BY discovered DESC'
     );

@@ -47,7 +47,8 @@ function handshakesReducer(state = initialState, action) {
     case ActionTypes.SEND_HANDSHAKES: {
       return {
         ...state,
-        send_handshakes_pending: true
+        send_handshakes_pending: true,
+        send_handshakes_error: null
       };
     }
     case ActionTypes.SEND_HANDSHAKES_SUCCESS: {
