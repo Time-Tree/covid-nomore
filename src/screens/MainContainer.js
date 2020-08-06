@@ -10,6 +10,7 @@ import reduxContainer from '../redux/reduxContainer';
 import NearbyContainer from './NearbyContainer';
 import TokensContainer from './TokensContainer';
 import StatusContainer from './StatusContainer';
+import ChatContainer from './ChatContainer';
 import ReportMeContainer from './ReportMeContainer';
 import ProtectContainer from './ProtectContainer';
 import NavbarComponent from './components/NavbarComponent';
@@ -43,6 +44,8 @@ const screenOptions = ({ route }) => ({
       iconName = 'format-list-numbered-rtl';
     } else if (route.name === 'Status') {
       iconName = 'account-check-outline';
+    } else if (route.name === 'Chat') {
+      iconName = 'chat-outline';
     } else if (route.name === 'Report me') {
       iconName = 'emoticon-sad-outline';
     } else if (route.name === 'Protect') {
@@ -89,6 +92,7 @@ const MainContainer = props => {
             <Tab.Screen name="Logs" component={NearbyContainer} />
           </>
         )}
+        <Tab.Screen name="Chat" component={ChatContainer} />
         <Tab.Screen name="Report me" component={ReportMeContainer} />
       </Tab.Navigator>
     </NavigationContainer>
