@@ -14,7 +14,6 @@ const FeelingFeedbackCard = ({ selectedFeedback, onFeedback }) => {
 
   return (
     <RoundedCard style={styles.card}>
-      <Text style={styles.header}>How are you feeling today?</Text>
       <FeelingFeedbackSelect
         selectedFeedback={selectedFeedback}
         onFeedback={onFeedback}
@@ -36,14 +35,7 @@ const FeelingFeedbackCard = ({ selectedFeedback, onFeedback }) => {
 const styles = StyleSheet.create({
   card: {
     padding: 16,
-    marginTop: 16,
-    marginLeft: 16,
-    marginRight: 16
-  },
-  header: {
-    textAlign: 'center',
-    fontSize: 20,
-    fontWeight: 'bold'
+    margin: 16
   },
   btnWrapper: {
     alignItems: 'center',

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 
 import picFeelBad from './picFeelBad.png';
 import picFeelNormal from './picFeelNormal.png';
@@ -24,30 +24,38 @@ const FeelingFeedbackSelect = ({ selectedFeedback, onFeedback }) => {
       : defaultEmojiBorder;
 
   return (
-    <View style={styles.feedbackWrapper}>
-      <TouchableOpacity
-        style={{ ...styles.emojiWrapper, borderColor: badEmojiBorder }}
-        onPress={() => onFeedback('bad')}
-      >
-        <Image source={picFeelBad} style={styles.emoji} />
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={{ ...styles.emojiWrapper, borderColor: normalEmojiBorder }}
-        onPress={() => onFeedback('normal')}
-      >
-        <Image source={picFeelNormal} style={styles.emoji} />
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={{ ...styles.emojiWrapper, borderColor: greatEmojiBorder }}
-        onPress={() => onFeedback('great')}
-      >
-        <Image source={picFeelGreat} style={styles.emoji} />
-      </TouchableOpacity>
-    </View>
+    <>
+      <Text style={styles.header}>How are you feeling today?</Text>
+      <View style={styles.feedbackWrapper}>
+        <TouchableOpacity
+          style={{ ...styles.emojiWrapper, borderColor: badEmojiBorder }}
+          onPress={() => onFeedback('bad')}
+        >
+          <Image source={picFeelBad} style={styles.emoji} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={{ ...styles.emojiWrapper, borderColor: normalEmojiBorder }}
+          onPress={() => onFeedback('normal')}
+        >
+          <Image source={picFeelNormal} style={styles.emoji} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={{ ...styles.emojiWrapper, borderColor: greatEmojiBorder }}
+          onPress={() => onFeedback('great')}
+        >
+          <Image source={picFeelGreat} style={styles.emoji} />
+        </TouchableOpacity>
+      </View>
+    </>
   );
 };
 
 const styles = StyleSheet.create({
+  header: {
+    textAlign: 'center',
+    fontSize: 20,
+    fontWeight: 'bold'
+  },
   feedbackWrapper: {
     marginTop: 24,
     marginBottom: 24,
