@@ -7,6 +7,7 @@ const RoundedButton = ({ containerStyle = {}, buttonStyle = {}, ...props }) => {
     <Button
       containerStyle={{ ...styles.container, ...containerStyle }}
       buttonStyle={{ ...styles.button, ...buttonStyle }}
+      iconContainerStyle={styles.iconContainer}
       titleStyle={styles.title}
       {...props}
     />
@@ -28,6 +29,9 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 15
+  },
+  iconContainer: {
+    position: 'relative'
   }
 });
 
