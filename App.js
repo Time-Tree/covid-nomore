@@ -1,17 +1,21 @@
 import React, { Component } from 'react';
 import 'react-native-gesture-handler';
 import { AppState, View, ActivityIndicator, Platform } from 'react-native';
+import settingsActions from './src/redux/settings/actions';
+import reduxContainer from './src/redux/reduxContainer';
 import { PersistGate } from 'redux-persist/integration/react';
 import { persistor } from './src/redux/store';
-import MainContainer from './src/screens/MainContainer';
 import NearbyAPI from './src/utils/nearbyAPI';
 import {
   requestMultiple,
   PERMISSIONS,
   RESULTS
 } from 'react-native-permissions';
+import { setCrashlytics } from './src/utils/crashlythics';
+import { generateRandomUUID } from './src/utils/uuid';
+import ScreenTabs from './ScreenTabs';
 
-export default class App extends Component {
+class App extends Component {
   requestPermissions = () => {
     requestMultiple([
       PERMISSIONS.ANDROID.ACCESS_BACKGROUND_LOCATION,
@@ -77,6 +81,14 @@ export default class App extends Component {
     }
   };
 
+  componentDidMount() {
+    setCrashlytics();
+
+    if (!this.props.clientId) {
+      this.props.setClientIdAction(generateRandomUUID());
+    }
+  }
+
   componentWillUnmount = () => {
     AppState.removeEventListener('change', this._handleAppStateChange);
   };
@@ -97,8 +109,21 @@ export default class App extends Component {
         persistor={persistor}
         onBeforeLift={this.onBeforeLift}
       >
-        <MainContainer />
+        <ScreenTabs showEasterEggScreens={this.props.easterEgg} />
       </PersistGate>
     );
   }
 }
+
+function mapStateToProps(state) {
+  return {
+    easterEgg: state.settings.easterEgg,
+    clientId: state.settings.clientId
+  };
+}
+
+const dispatchToProps = {
+  setClientIdAction: settingsActions.setClientIdAction
+};
+
+export default reduxContainer(App, mapStateToProps, dispatchToProps);
