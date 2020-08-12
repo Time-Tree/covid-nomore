@@ -21,8 +21,7 @@ const FeelingFeedbackCard = ({ selectedFeedback, onFeedback }) => {
       <View style={styles.btnWrapper}>
         <RoundedButton
           title="CHECK VITALS"
-          containerStyle={styles.buttonContainer}
-          buttonStyle={{ ...styles.button, backgroundColor: buttonColor }}
+          buttonStyle={{ backgroundColor: buttonColor }}
           onPress={() => {}}
           iconRight={true}
           icon={icon}
