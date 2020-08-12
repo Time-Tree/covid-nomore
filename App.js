@@ -1,9 +1,8 @@
 import React, { Component } from 'react';
 import 'react-native-gesture-handler';
 import { AppState, View, ActivityIndicator, Platform } from 'react-native';
-import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
-import { store, persistor } from './src/redux/store';
+import { persistor } from './src/redux/store';
 import MainContainer from './src/screens/MainContainer';
 import NearbyAPI from './src/utils/nearbyAPI';
 import {
@@ -93,15 +92,13 @@ export default class App extends Component {
   render() {
     console.disableYellowBox = true;
     return (
-      <Provider store={store}>
-        <PersistGate
-          loading={this.renderLoading()}
-          persistor={persistor}
-          onBeforeLift={this.onBeforeLift}
-        >
-          <MainContainer />
-        </PersistGate>
-      </Provider>
+      <PersistGate
+        loading={this.renderLoading()}
+        persistor={persistor}
+        onBeforeLift={this.onBeforeLift}
+      >
+        <MainContainer />
+      </PersistGate>
     );
   }
 }
