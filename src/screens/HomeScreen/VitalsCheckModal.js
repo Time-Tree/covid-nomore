@@ -13,7 +13,7 @@ const FeelingFeedbackModal = ({ show, check, snooze }) => {
           title="CHECK VITALS"
           containerStyle={styles.buttonContainer}
           buttonStyle={styles.btnCheck}
-          onPress={() => {}}
+          onPress={check}
         />
         <RoundedButton
           title="REMIND ME IN 1 HOUR"
@@ -21,7 +21,7 @@ const FeelingFeedbackModal = ({ show, check, snooze }) => {
           buttonStyle={styles.btnSnooze}
           titleStyle={styles.btnSnoozeTitle}
           shadow={false}
-          onPress={() => {}}
+          onPress={snooze}
         />
       </RoundedCard>
     </Modal>
