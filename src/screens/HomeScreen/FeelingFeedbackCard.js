@@ -5,12 +5,16 @@ import Icon from 'react-native-vector-icons/Feather';
 import { RoundedCard, RoundedButton } from '../../components';
 import FeelingFeedbackSelect from './FeelingFeedbackSelect';
 
-const FeelingFeedbackCard = ({ selectedFeedback, onFeedback }) => {
-  const icon = selectedFeedback ? (
+const FeelingFeedbackCard = ({
+  selectedFeedback,
+  onFeedback,
+  vitalsChecked
+}) => {
+  const icon = vitalsChecked ? (
     <Icon name="check" size={22} color="#fff" style={styles.btnIcon} />
   ) : null;
 
-  const buttonColor = selectedFeedback ? '#00de66' : '#00c0ff';
+  const buttonColor = vitalsChecked ? '#00de66' : '#00c0ff';
 
   return (
     <RoundedCard style={styles.card}>
