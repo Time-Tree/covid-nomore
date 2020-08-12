@@ -8,7 +8,8 @@ const StatusHeader = ({ children, style = {} }) => {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#fff',
-    borderRadius: 36
+    borderRadius: 36,
+    elevation: 0.4
   }
 });
 

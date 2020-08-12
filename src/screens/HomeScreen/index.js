@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ScrollView } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 
 import StatusHeader from './StatusHeader';
 import RiskProgress from './RiskProgress';
@@ -22,7 +22,7 @@ const HomeScreen = () => {
   const onFeedback = feelingFeedback => setFeeling(feelingFeedback);
 
   return (
-    <ScrollView>
+    <ScrollView contentContainerStyle={styles.container}>
       <StatusHeader
         isActive={isActive}
         onActivatePress={() => setIsActive(true)}
@@ -42,5 +42,11 @@ const HomeScreen = () => {
     </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: '#f7f8fc'
+  }
+});
 
 export default HomeScreen;
