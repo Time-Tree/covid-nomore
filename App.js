@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import 'react-native-gesture-handler';
-import { AppState, View, ActivityIndicator, Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import settingsActions from './src/redux/settings/actions';
 import reduxContainer from './src/redux/reduxContainer';
 import { PersistGate } from 'redux-persist/integration/react';
@@ -13,6 +13,8 @@ import {
 } from 'react-native-permissions';
 import { setCrashlytics } from './src/utils/crashlythics';
 import { generateRandomUUID } from './src/utils/uuid';
+
+import SplashScreen from './src/screens/Splash';
 import ScreenTabs from './ScreenTabs';
 
 class App extends Component {
@@ -93,19 +95,10 @@ class App extends Component {
     AppState.removeEventListener('change', this._handleAppStateChange);
   };
 
-  renderLoading = () => {
-    return (
-      <View>
-        <ActivityIndicator size={'large'} />
-      </View>
-    );
-  };
-
   render() {
-    console.disableYellowBox = true;
     return (
       <PersistGate
-        loading={this.renderLoading()}
+        loading={<SplashScreen />}
         persistor={persistor}
         onBeforeLift={this.onBeforeLift}
       >

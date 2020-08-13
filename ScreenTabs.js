@@ -47,7 +47,7 @@ const ScreenTabs = ({ showEasterEggScreens = false }) => {
           tabBarOptions={{
             activeTintColor: '#008bcf',
             inactiveTintColor: '#9ba2ab',
-            keyboardHidesTabBar: true,
+            keyboardHidesTabBar: true
           }}
         >
           <Tab.Screen name="Home" component={HomeScreen} />
