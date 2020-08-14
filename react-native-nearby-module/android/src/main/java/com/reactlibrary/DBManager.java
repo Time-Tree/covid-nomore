@@ -29,10 +29,12 @@ final class SettingsContract {
         public static final String TABLE_NAME = "Settings";
         public static final String COLUMN_NAME_BLE_PROCESS = "bleProcess";
         public static final String COLUMN_NAME_BLE_INTEVAL = "bleInterval";
+        public static final String COLUMN_NAME_BLE_STATUS = "bleStatus";
         public static final String COLUMN_NAME_BLE_DURATION = "bleDuration";
         public static final String COLUMN_NAME_NEARBY_PROCESS = "nearbyProcess";
         public static final String COLUMN_NAME_NEARBY_INTEVAL = "nearbyInterval";
         public static final String COLUMN_NAME_NEARBY_DURATION = "nearbyDuration";
+        public static final String COLUMN_NAME_NEARBY_STATUS = "nearbyStatus";
     }
 }
 
@@ -74,8 +76,10 @@ public class DBManager extends SQLiteOpenHelper {
             + " INTEGER PRIMARY KEY," + SettingsContract.SettingsEntry.COLUMN_NAME_BLE_PROCESS + " INTEGER,"
             + SettingsContract.SettingsEntry.COLUMN_NAME_BLE_INTEVAL + " INTEGER,"
             + SettingsContract.SettingsEntry.COLUMN_NAME_BLE_DURATION + " INTEGER,"
+            + SettingsContract.SettingsEntry.COLUMN_NAME_BLE_STATUS + " TEXT,"
             + SettingsContract.SettingsEntry.COLUMN_NAME_NEARBY_PROCESS + " INTEGER,"
             + SettingsContract.SettingsEntry.COLUMN_NAME_NEARBY_INTEVAL + " INTEGER,"
+            + SettingsContract.SettingsEntry.COLUMN_NAME_NEARBY_STATUS + " TEXT,"
             + SettingsContract.SettingsEntry.COLUMN_NAME_NEARBY_DURATION + " INTEGER)";
 
     private static final String SQL_CREATE_TOKENS = "CREATE TABLE IF NOT EXISTS " + TokenContract.TokenEntry.TABLE_NAME
@@ -133,11 +137,13 @@ public class DBManager extends SQLiteOpenHelper {
             } else {
                 ContentValues values = new ContentValues();
                 values.put(SettingsContract.SettingsEntry.COLUMN_NAME_BLE_PROCESS, 1);
-                values.put(SettingsContract.SettingsEntry.COLUMN_NAME_BLE_INTEVAL, 3);
-                values.put(SettingsContract.SettingsEntry.COLUMN_NAME_BLE_DURATION, 1);
+                values.put(SettingsContract.SettingsEntry.COLUMN_NAME_BLE_INTEVAL, 8);
+                values.put(SettingsContract.SettingsEntry.COLUMN_NAME_BLE_DURATION, 6);
+                values.put(SettingsContract.SettingsEntry.COLUMN_NAME_BLE_STATUS, "OFF");
                 values.put(SettingsContract.SettingsEntry.COLUMN_NAME_NEARBY_PROCESS, 1);
-                values.put(SettingsContract.SettingsEntry.COLUMN_NAME_NEARBY_INTEVAL, 3);
-                values.put(SettingsContract.SettingsEntry.COLUMN_NAME_NEARBY_DURATION, 1);
+                values.put(SettingsContract.SettingsEntry.COLUMN_NAME_NEARBY_STATUS, "OFF");
+                values.put(SettingsContract.SettingsEntry.COLUMN_NAME_NEARBY_INTEVAL, 8);
+                values.put(SettingsContract.SettingsEntry.COLUMN_NAME_NEARBY_DURATION, 6);
                 long newRowId = db.insert(SettingsContract.SettingsEntry.TABLE_NAME, null, values);
                 Log.i("NearbySQL", "newRowId: " + newRowId);
             }

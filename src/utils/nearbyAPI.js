@@ -11,13 +11,17 @@ import { getCoarseProximity, approximateDistance } from './distance.js';
 class NearbyAPI {
   lock = false;
 
-  startService(needKey) {
+  startService = async needKey => {
     if (needKey) {
-      NearbyModule.startService(keys.NEARBY_KEY);
+      return NearbyModule.startService(keys.NEARBY_KEY);
     } else {
-      NearbyModule.startService();
+      return NearbyModule.startService();
     }
-  }
+  };
+
+  stopService = async () => {
+    return NearbyModule.stopService();
+  };
 
   nearbyCheck() {
     this.getEvents();
@@ -28,7 +32,8 @@ class NearbyAPI {
     try {
       if (this.lock) return;
       this.lock = true;
-      let { sync } = store.getState().events;
+      const storeState = store.getState();
+      let { sync } = storeState.events;
       SQLite.enablePromise(true);
       if (Platform.OS === 'android') {
         db = await SQLite.openDatabase('NearbyEvents');
@@ -60,7 +65,7 @@ class NearbyAPI {
               sync = event.timestamp;
             }
             if (
-              event.eventType === 'NEARBY_FOUND' ||
+              // event.eventType === 'NEARBY_FOUND' ||
               event.eventType === 'BLE_FOUND'
             ) {
               const { eventType } = event;
@@ -92,6 +97,17 @@ class NearbyAPI {
         await db.executeSql(
           `DELETE FROM NearbyEvents WHERE timestamp <= ${sync}`
         );
+      }
+      let settings = null;
+      const settingsSql = await db.executeSql(
+        'SELECT * FROM Settings WHERE _ID = 1'
+      );
+      if (settingsSql[0]) {
+        const res = settingsSql[0];
+        settings = res.rows.item(0);
+      }
+      if (settings) {
+        this.setStatus(settings, storeState);
       }
       this.lock = false;
     } catch (error) {
@@ -145,7 +161,25 @@ class NearbyAPI {
         await db.close();
       }
     }
-    NearbyModule.restartService();
+    const restart = await NearbyModule.restartService();
+    console.log('Restarting service with status', restart);
+    if (restart === 'SUCCESS') {
+      const settings = await this.getSettings();
+      console.log('Success status change', settings);
+    }
+  };
+
+  restartServices = async () => {
+    const settings = await this.getSettings();
+    if (settings) {
+      const { nearbyStatus, bleStatus } = settings;
+      if (nearbyStatus === 'ON' || bleStatus === 'ON') {
+        const restart = await NearbyModule.restartService();
+        console.log('Restarting service with status', restart);
+      } else {
+        console.log('Services are OFF, not restarting');
+      }
+    }
   };
 
   getSettings = async () => {
@@ -168,6 +202,10 @@ class NearbyAPI {
       if (result[0]) {
         const res = result[0];
         settings = res.rows.item(0);
+        if (settings) {
+          const storeState = store.getState();
+          this.setStatus(settings, storeState);
+        }
       }
       await db.close();
       delete settings._ID;
@@ -203,35 +241,56 @@ class NearbyAPI {
         await db.close();
       }
     }
-    NearbyModule.restartService();
+    const restart = await NearbyModule.restartService();
+    console.log('Restarting service with status', restart);
+    if (restart === 'SUCCESS') {
+      const settings = await this.getSettings();
+      console.log('Success status change', settings);
+    }
   };
 
-  setNativeProcess = async status => {
-    let db;
-    try {
-      SQLite.enablePromise(true);
-      if (Platform.OS === 'android') {
-        db = await SQLite.openDatabase('NearbyEvents');
-      } else {
-        db = await SQLite.openDatabase({
-          name: 'NearbyEvents.sqlite',
-          location: 'Documents'
-        });
+  setStatus(settings, storeState) {
+    if (settings) {
+      let { nearbyStatus, bleStatus } = storeState.settings;
+      if (settings.nearbyStatus === 'OFF' && nearbyStatus) {
+        store.dispatch(settingsActions.setNearbyStatusAction(false));
+      } else if (settings.nearbyStatus === 'ON' && !nearbyStatus) {
+        store.dispatch(settingsActions.setNearbyStatusAction(true));
       }
-      console.log('Update native process', status);
-      const query = `UPDATE Settings SET bleProcess = ${status}, nearbyProcess = ${status} WHERE _ID = 1`;
-      await db.executeSql(query);
-      store.dispatch(settingsActions.setNearbyProcessAction(!!status));
-      store.dispatch(settingsActions.setBleProcessAction(!!status));
-    } catch (error) {
-      console.log('setNativeProcess error', error);
-    } finally {
-      if (db) {
-        await db.close();
+      if (settings.bleStatus === 'OFF' && bleStatus) {
+        store.dispatch(settingsActions.setBleStatusAction(false));
+      } else if (settings.bleStatus === 'ON' && !bleStatus) {
+        store.dispatch(settingsActions.setBleStatusAction(true));
       }
     }
-    NearbyModule.restartService();
-  };
+  }
+
+  //   setNativeProcess = async status => {
+  //     let db;
+  //     try {
+  //       SQLite.enablePromise(true);
+  //       if (Platform.OS === 'android') {
+  //         db = await SQLite.openDatabase('NearbyEvents');
+  //       } else {
+  //         db = await SQLite.openDatabase({
+  //           name: 'NearbyEvents.sqlite',
+  //           location: 'Documents'
+  //         });
+  //       }
+  //       console.log('Update native process', status);
+  //       const query = `UPDATE Settings SET bleProcess = ${status}, nearbyProcess = ${status} WHERE _ID = 1`;
+  //       await db.executeSql(query);
+  //       store.dispatch(settingsActions.setNearbyProcessAction(!!status));
+  //       store.dispatch(settingsActions.setBleProcessAction(!!status));
+  //     } catch (error) {
+  //       console.log('setNativeProcess error', error);
+  //     } finally {
+  //       if (db) {
+  //         await db.close();
+  //       }
+  //     }
+  //     NearbyModule.restartService();
+  //   };
 }
 
 export default new NearbyAPI();

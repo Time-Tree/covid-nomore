@@ -49,8 +49,8 @@ class NearbyContainer extends React.Component {
       } else {
         color = 'darkblue';
       }
-    } else if (item.event.indexOf('NEARBY') > -1) {
-      if (item.event === 'NEARBY_FOUND') {
+    } else if (item.event.indexOf('BEACON') > -1) {
+      if (item.event.indexOf('BEACON_FOUND') > -1) {
         color = 'green';
       } else {
         color = 'darkgreen';

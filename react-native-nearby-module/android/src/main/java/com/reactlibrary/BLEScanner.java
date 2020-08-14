@@ -65,8 +65,14 @@ public class BLEScanner {
     }
 
     public void stopScanner() {
+        if (bleManager.getBluetoothAdapter() != null) {
+            Log.d(TAG, "DOES NOT HAVE BLE ADAPTER");
+        } else {
+            Log.d(TAG, "DOES HAVE BLE ADAPTER");
+        }
         bleManager.cancelScan();
         bleManager.disconnectAllDevice();
+        bleManager.destroy();
         dbHelper.addEvent("BLE_SCANNER", "Scanning stopped");
         isStarted = false;
         isScanning = false;
@@ -138,7 +144,6 @@ public class BLEScanner {
 
         @Override
         public void onConnectSuccess(final BleDevice bleDevice, BluetoothGatt gatt, int status) {
-            Log.i(TAG, "-----> onConnectSuccess " + bleDevice.getName() + " " + bleDevice.getMac());
             BluetoothGattService service = gatt.getService(UUID.fromString("a9ecdb59-974e-43f0-9d93-27d5dcb060d6"));
             if (service != null) {
                 List<BluetoothGattCharacteristic> characteristics = service.getCharacteristics();
@@ -157,6 +162,7 @@ public class BLEScanner {
                         signalStrengths.remove(macAddress);
                     }
                     dbHelper.addEvent("BLE_FOUND", message);
+                    Log.i(TAG, "-----> BLE_FOUND " + bleDevice.getName() + " " + bleDevice.getMac());
                     foundDevices.put(macAddress, Calendar.getInstance().getTimeInMillis());
 
                     ContentValues values = new ContentValues();
@@ -168,11 +174,11 @@ public class BLEScanner {
                         @Override
                         public void onReadSuccess(byte[] data) {
                             try {
-                                Log.i(TAG, "onReadSuccess");
                                 String uniqueIdentifier = new String(data, "UTF-8");
                                 String message = "Characteristic data found. ID: " + uniqueIdentifier;
                                 dbHelper.addEvent("BLE_DATA_FOUND", message);
                                 dbHelper.updateCharacteristicData(uniqueIdentifier);
+                                Log.i(TAG, "BLE_DATA_FOUND " + message);
                             } catch (UnsupportedEncodingException e) {
                                 e.printStackTrace();
                                 Log.i(TAG, "onReadSuccess catch" + e.getMessage());

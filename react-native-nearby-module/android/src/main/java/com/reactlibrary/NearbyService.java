@@ -29,13 +29,14 @@ import androidx.core.app.NotificationManagerCompat;
 @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
 public class NearbyService extends Service {
 
-    static String TAG = "Service";
+    static String TAG = "NearbyService";
     static String NOTIFICATION_CHANNEL = "CovidNoMore";
     static Integer NOTIFICATION_CHANNEL_ID = 123456;
     static NotificationManagerCompat notificationManager;
     public Integer code = 0;
     private DBUtil dbHelper;
     private BLEScanner mBLEScanner = null;
+    private BeaconScanner mBeaconScanner = null;
     private BLEAdvertiser mBLEAdvertiser = null;
     private NearbyManager nearbyManager = null;
     private static Timer nearbyStartTimer = null;
@@ -68,13 +69,11 @@ public class NearbyService extends Service {
                 buildForegroundNotification("CovidNoMore", "Background Service", true));
         Context context = this.getApplicationContext();
         dbHelper = DBUtil.getInstance(context);
-        if (checkBluetooth()) {
-            mBLEScanner = new BLEScanner(context);
-            mBLEAdvertiser = new BLEAdvertiser(context);
-        } else {
-            Log.e(TAG, "Bluetooth init error");
-        }
-        nearbyManager = NearbyManager.getInstance(context);
+        mBLEScanner = new BLEScanner(context);
+        mBeaconScanner = new BeaconScanner(context);
+        mBLEAdvertiser = new BLEAdvertiser(context);
+
+//        nearbyManager = NearbyManager.getInstance(context);
         nearbyThread.start();
         nearbyStopHandler = new Handler(nearbyThread.getLooper());
         bleThread.start();
@@ -89,7 +88,7 @@ public class NearbyService extends Service {
 
     public void setCurrentApplication(Application application) {
         mBLEScanner.setCurrentApplication(application);
-        startTimers();
+        mBeaconScanner.setCurrentApplication(application);
     }
 
     private Boolean checkBluetooth() {
@@ -107,8 +106,28 @@ public class NearbyService extends Service {
         return false;
     }
 
-    public void startTimers() {
+    public String startAll() {
+        if (checkBluetooth()) {
+            if (startTimers()) {
+                return "SUCCESS";
+            } else {
+                return "ERROR";
+            }
+        } else {
+            Log.e(TAG, "Bluetooth init error");
+            return "BLE_ERROR";
+        }
+    }
+
+    public Boolean startTimers() {
         Log.i(TAG, "startTimers");
+        ContentValues settings = dbHelper.getSettingsData();
+        parseSettingsData(settings);
+        Integer nearbySettings = settings.getAsInteger("nearbyProcess");
+        Integer bleSettings = settings.getAsInteger("bleProcess");
+        if (nearbySettings == 0 && bleSettings == 0) {
+            return true;
+        }
         if (nearbyStartTimer != null) {
             nearbyStartTimer.cancel();
             nearbyStartTimer.purge();
@@ -117,45 +136,64 @@ public class NearbyService extends Service {
             bleStartTimer.cancel();
             bleStartTimer.purge();
         }
-        ContentValues settings = dbHelper.getSettingsData();
-        parseSettingsData(settings);
-        if (settings.getAsInteger("bleProcess") == 1) {
-            startBLETimerTask();
+
+        Boolean BLE_ON = false;
+        Boolean NEARBY_ON = false;
+        if (bleSettings == 1) {
+            BLE_ON = startBLETimerTask();
+            if (BLE_ON) {
+                dbHelper.updateServiceStatus("BLE", "ON");
+            }
         }
-        if (settings.getAsInteger("nearbyProcess") == 1) {
-            startNearbyTimerTask();
+        if (nearbySettings == 1) {
+            NEARBY_ON = startNearbyTimerTask();
+            if (NEARBY_ON) {
+                dbHelper.updateServiceStatus("NEARBY", "ON");
+            }
+        }
+        if (BLE_ON || NEARBY_ON) {
+            return true;
+        } else {
+            return false;
         }
     }
 
-    public void restartService() {
-        Log.i(TAG, "restartService");
-        ContentValues settings = dbHelper.getSettingsData();
-        parseSettingsData(settings);
-        stopAllProcess();
-        if (settings.getAsInteger("bleProcess") == 1) {
-            startBLETimerTask();
-        }
-        if (settings.getAsInteger("nearbyProcess") == 1) {
-            startNearbyTimerTask();
-        }
-    }
-
-    private void stopAllProcess() {
+    public String stopAll() {
         Log.i(TAG, "stopAllProcess");
-        if (nearbyStartTimer != null) {
-            nearbyStartTimer.cancel();
-            nearbyStartTimer.purge();
-            nearbyManager.unsubscribe();
-            nearbyManager.unpublish();
+        try {
+            if (nearbyStartTimer != null) {
+                nearbyStartTimer.cancel();
+                nearbyStartTimer.purge();
+    //            nearbyManager.unsubscribe();
+    //            nearbyManager.unpublish();
+                mBeaconScanner.stopScanner();
+            }
+            if (bleStartTimer != null) {
+                bleStartTimer.cancel();
+                bleStartTimer.purge();
+                mBLEAdvertiser.stopAdvertising();
+                mBLEScanner.stopScanner();
+            }
+            nearbyStopHandler.removeCallbacksAndMessages(null);
+            bleStopHandler.removeCallbacksAndMessages(null);
+            dbHelper.updateServiceStatus("NEARBY", "OFF");
+            dbHelper.updateServiceStatus("BLE", "OFF");
+            return "SUCCESS";
+        } catch (Exception e) {
+            Log.e(TAG, "stopAllProcess error " + e);
+            return "ERROR";
         }
-        if (bleStartTimer != null) {
-            bleStartTimer.cancel();
-            bleStartTimer.purge();
-            mBLEAdvertiser.stopAdvertising();
-            mBLEScanner.stopScanner();
+    }
+
+
+    public String restartService() {
+        Log.i(TAG, "restartService");
+        String stopStatus = stopAll();
+        if (stopStatus.equals("SUCCESS")) {
+            return startAll();
+        } else {
+            return "ERROR";
         }
-        nearbyStopHandler.removeCallbacksAndMessages(null);
-        bleStopHandler.removeCallbacksAndMessages(null);
     }
 
     private void parseSettingsData(ContentValues settings) {
@@ -163,56 +201,73 @@ public class NearbyService extends Service {
         BLE_DURATION = settings.getAsInteger("bleDuration") * 60 * 1000;
         NEARBY_INTERVAL = settings.getAsInteger("nearbyInterval") * 60 * 1000;
         NEARBY_DURATION = settings.getAsInteger("nearbyDuration") * 60 * 1000;
+        Log.i(TAG, "Starting with settings: BLE_INTERVAL " + BLE_INTERVAL + " BLE_DURATION " + BLE_DURATION + " NEARBY_INTERVAL " + NEARBY_INTERVAL + " NEARBY_DURATION " + NEARBY_DURATION);
     }
 
-    private void startNearbyTimerTask() {
+    private Boolean startNearbyTimerTask() {
         Log.i(TAG, "startNearbyTimerTask");
         nearbyStartTimer = new Timer();
-        TimerTask startNearbyTimerTask = new TimerTask() {
-            @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-            public void run() {
-                code = 1000 + new Random().nextInt(9000);
-                Log.i(TAG, "New generated code = " + code);
-                nearbyManager.checkAndConnect();
-                nearbyManager.subscribe();
-                nearbyManager.publish(code);
-                nearbyStopHandler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        Log.i(TAG, "stopNearbyTimerTask");
-                        nearbyManager.unsubscribe();
-                        nearbyManager.unpublish();
+        try {
+            TimerTask startNearbyTimerTask = new TimerTask() {
+                @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+                public void run() {
+//                code = 1000 + new Random().nextInt(9000);
+//                Log.i(TAG, "New generated code = " + code);
+//                nearbyManager.checkAndConnect();
+//                nearbyManager.subscribe();
+//                nearbyManager.publish(code);
+                    if (mBeaconScanner != null) {
+                        mBeaconScanner.startScanner();
                     }
-                }, NEARBY_DURATION);
-            }
-        };
-        nearbyStartTimer.schedule(startNearbyTimerTask, 0, NEARBY_INTERVAL);
+                    nearbyStopHandler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            Log.i(TAG, "stopNearbyTimerTask");
+//                        nearbyManager.unsubscribe();
+//                        nearbyManager.unpublish();
+                            mBeaconScanner.stopScanner();
+                        }
+                    }, NEARBY_DURATION);
+                }
+            };
+            nearbyStartTimer.schedule(startNearbyTimerTask, 0, NEARBY_INTERVAL);
+            return true;
+        }catch (Exception e) {
+            Log.e(TAG, "startNearbyTimerTask error " + e);
+            return false;
+        }
     }
 
-    private void startBLETimerTask() {
+    private Boolean startBLETimerTask() {
         Log.i(TAG, "startBLETimerTask");
-        bleStartTimer = new Timer();
-        TimerTask startBLETimerTask = new TimerTask() {
-            @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-            public void run() {
-                if (mBLEAdvertiser != null) {
-                    mBLEAdvertiser.startAdvertising();
-                }
-                if (mBLEScanner != null) {
-                    mBLEScanner.startScanner();
-                }
-                bleStopHandler.postDelayed(new Runnable() {
-                    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-                    @Override
-                    public void run() {
-                        Log.i(TAG, "stopBLETimerTask");
-                        mBLEAdvertiser.stopAdvertising();
-                        mBLEScanner.stopScanner();
+        try {
+            bleStartTimer = new Timer();
+            TimerTask startBLETimerTask = new TimerTask() {
+                @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+                public void run() {
+                    if (mBLEAdvertiser != null) {
+                        mBLEAdvertiser.startAdvertising();
                     }
-                }, BLE_DURATION);
-            }
-        };
-        bleStartTimer.schedule(startBLETimerTask, 0, BLE_INTERVAL);
+                    if (mBLEScanner != null) {
+                        mBLEScanner.startScanner();
+                    }
+                    bleStopHandler.postDelayed(new Runnable() {
+                        @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+                        @Override
+                        public void run() {
+                            Log.i(TAG, "stopBLETimerTask");
+                            mBLEAdvertiser.stopAdvertising();
+                            mBLEScanner.stopScanner();
+                        }
+                    }, BLE_DURATION);
+                }
+            };
+            bleStartTimer.schedule(startBLETimerTask, 0, BLE_INTERVAL);
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, "startBLETimerTask error " + e);
+            return false;
+        }
     }
 
     @Nullable

@@ -15,10 +15,10 @@ import NearbyApi from '../utils/nearbyAPI';
 const isAndroid = Platform.OS === 'android';
 
 const initialState = {
-  bleInterval: 5,
-  bleDuration: 1,
-  nearbyInterval: 5,
-  nearbyDuration: 1
+  bleInterval: 8,
+  bleDuration: 6,
+  nearbyInterval: 8,
+  nearbyDuration: 6
 };
 
 function reducer(state, action) {

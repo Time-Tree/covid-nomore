@@ -63,9 +63,11 @@ public class DBUtil {
                 response.put(SettingsContract.SettingsEntry.COLUMN_NAME_BLE_PROCESS, c.getInt(1));
                 response.put(SettingsContract.SettingsEntry.COLUMN_NAME_BLE_INTEVAL, c.getInt(2));
                 response.put(SettingsContract.SettingsEntry.COLUMN_NAME_BLE_DURATION, c.getInt(3));
-                response.put(SettingsContract.SettingsEntry.COLUMN_NAME_NEARBY_PROCESS, c.getInt(4));
-                response.put(SettingsContract.SettingsEntry.COLUMN_NAME_NEARBY_INTEVAL, c.getInt(5));
-                response.put(SettingsContract.SettingsEntry.COLUMN_NAME_NEARBY_DURATION, c.getInt(6));
+                response.put(SettingsContract.SettingsEntry.COLUMN_NAME_BLE_STATUS, c.getInt(4));
+                response.put(SettingsContract.SettingsEntry.COLUMN_NAME_NEARBY_PROCESS, c.getInt(5));
+                response.put(SettingsContract.SettingsEntry.COLUMN_NAME_NEARBY_INTEVAL, c.getInt(6));
+                response.put(SettingsContract.SettingsEntry.COLUMN_NAME_NEARBY_STATUS, c.getInt(7));
+                response.put(SettingsContract.SettingsEntry.COLUMN_NAME_NEARBY_DURATION, c.getInt(8));
             }
             c.close();
             db.close();
@@ -113,6 +115,28 @@ public class DBUtil {
             values.put(TokenContract.TokenEntry.COLUMN_NAME_USED, 1);
             nRowsEffected = db.update(TokenContract.TokenEntry.TABLE_NAME, values,
                     TokenContract.TokenEntry.COLUMN_NAME_TOKEN + " = ?", new String[] { token });
+            db.close();
+        } catch (Error e) {
+            e.printStackTrace();
+        }
+        Log.i(TAG, "nRowsEffected: " + nRowsEffected);
+        return nRowsEffected;
+    }
+
+    public synchronized long updateServiceStatus(String service, String status) {
+        int nRowsEffected = -1;
+        Log.i(TAG, "updateServiceStatus for " + service + " with status " + status);
+        try {
+            SQLiteDatabase db = dbManager.getWritableDatabase();
+            ContentValues values = new ContentValues();
+            if (service.equals("BLE")) {
+                values.put(SettingsContract.SettingsEntry.COLUMN_NAME_BLE_STATUS, status);
+            } else {
+                values.put(SettingsContract.SettingsEntry.COLUMN_NAME_NEARBY_STATUS, status);
+            }
+
+            nRowsEffected = db.update(SettingsContract.SettingsEntry.TABLE_NAME, values,
+                    TokenContract.TokenEntry._ID + " = ?", new String[] { "1" });
             db.close();
         } catch (Error e) {
             e.printStackTrace();

@@ -11,26 +11,49 @@ import NavbarComponent from './components/NavbarComponent';
 import NearbyAPI from '../utils/nearbyAPI';
 
 const ProtectContainer = props => {
-  const [process, setProcess] = useState(props.bleProcess);
+  const [activated, setActivated] = useState(
+    props.bleStatus || props.nearbyStatus
+  );
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+  const isDisabled = !props.nearbyProcess && !props.bleProcess;
 
-  const buttonHandler = () => {
-    const value = process ? 0 : 1;
+  const buttonHandler = async () => {
     setLoading(true);
-    NearbyAPI.setToggle('bleProcess', value);
+    setError(false);
+    let status = null;
+    if (!activated) {
+      status = await NearbyAPI.startService();
+    } else {
+      status = await NearbyAPI.stopService();
+    }
+    console.log('STATUS CHANGE', status);
+    if (status === 'SUCCESS') {
+      const settings = await NearbyAPI.getSettings();
+      console.log('Success status change', settings);
+    } else if (status === 'BLE_ERROR') {
+      setError('Bluetooth adapter is off or has some problems. Please retry!');
+    } else {
+      setError('Error with service. Please retry!');
+    }
+    setLoading(false);
   };
 
   useEffect(() => {
-    setProcess(props.bleProcess);
+    setActivated(props.bleStatus || props.nearbyStatus);
     setLoading(false);
-  }, [props.bleProcess]);
+  }, [props.bleStatus, props.nearbyStatus]);
 
   return (
     <>
       <NavbarComponent title="Protect" />
       <View style={styles.content}>
         <Text style={styles.bigText}>
-          {process ? 'Protection activated' : 'Protection deactivated'}
+          {activated ? 'Protection activated' : 'Protection deactivated'}
+        </Text>
+        <Text style={styles.services}>
+          {activated &&
+            `(${props.bleStatus && 'BLE'} ${props.nearbyStatus && 'Nearby'})`}
         </Text>
         <Text style={styles.headerText}>
           Play an active role in fighting COVID-19!
@@ -47,7 +70,7 @@ const ProtectContainer = props => {
         <View
           style={[
             styles.button,
-            process ? styles.activeButton : styles.deactiveButton
+            activated ? styles.activeButton : styles.deactiveButton
           ]}
         >
           <ActivityIndicator color="white" />
@@ -56,14 +79,21 @@ const ProtectContainer = props => {
         <TouchableOpacity
           style={[
             styles.button,
-            process ? styles.activeButton : styles.deactiveButton
+            activated ? styles.activeButton : styles.deactiveButton
           ]}
           onPress={buttonHandler}
+          disabled={isDisabled}
         >
           <Text style={styles.textButton}>
-            {process ? 'Deactivate CovidNoMore' : 'Activate CovidNoMore'}{' '}
+            {activated ? 'Deactivate CovidNoMore' : 'Activate CovidNoMore'}
           </Text>
         </TouchableOpacity>
+      )}
+      {error && <Text style={styles.error}>{error}</Text>}
+      {isDisabled && (
+        <Text style={styles.error}>
+          Services are disabled, please enable them from settings.
+        </Text>
       )}
     </>
   );
@@ -115,12 +145,22 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 5,
     marginBottom: 30
+  },
+  services: {
+    textAlign: 'center'
+  },
+  error: {
+    color: 'red',
+    textAlign: 'center'
   }
 });
 
 function mapStateToProps(state) {
   return {
-    bleProcess: state.settings.bleProcess
+    bleStatus: state.settings.bleStatus,
+    nearbyStatus: state.settings.nearbyStatus,
+    bleProcess: state.settings.bleProcess,
+    nearbyProcess: state.settings.nearbyProcess
   };
 }
 

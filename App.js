@@ -50,6 +50,7 @@ export default class App extends Component {
     console.log('_handleAppStateChange', nextAppState);
     if (nextAppState === 'active' && !this._interval) {
       this.startPoller();
+      NearbyAPI.restartServices();
     } else if (nextAppState !== 'active' && this._interval) {
       clearInterval(this._interval);
       this._interval = null;
@@ -71,10 +72,11 @@ export default class App extends Component {
     AppState.addEventListener('change', this._handleAppStateChange);
     this.startPoller();
     if (Platform.OS === 'android') {
+      // Should start service after permission grated
       this.requestPermissions();
-      NearbyAPI.startService(false);
+      // NearbyAPI.startService(false);
     } else {
-      NearbyAPI.startService(true);
+      // NearbyAPI.startService(true);
     }
   };
 

@@ -76,6 +76,7 @@ dependencies {
     implementation 'com.facebook.react:react-native:+'  // From node_modules
     implementation 'com.google.android.gms:play-services-nearby:17.0.0'
     implementation 'com.clj.fastble:FastBleLib:2.3.4'
+    implementation 'com.squareup.okhttp3:okhttp:4.8.1'
 }
 
 def configureReactNativePom(def pom) {
