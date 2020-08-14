@@ -4,7 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-import HomeScreen from './src/screens/HomeScreen';
+import HomeScreen from './src/screens/Home';
 
 import NearbyContainer from './src/screens/NearbyContainer';
 import TokensContainer from './src/screens/TokensContainer';

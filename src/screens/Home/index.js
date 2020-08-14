@@ -7,7 +7,7 @@ import FeelingFeedbackCard from './FeelingFeedbackCard';
 import FeelingFeedbackModal from './FeelingFeedbackModal';
 import VitalsCheckModal from './VitalsCheckModal';
 
-const HomeScreen = () => {
+const Home = () => {
   const [isActive, setIsActive] = useState(false);
   const [feeling, setFeeling] = useState(null);
   const [vitalsChecked, setVitalsChecked] = useState(false);
@@ -49,4 +49,4 @@ const styles = StyleSheet.create({
   }
 });
 
-export default HomeScreen;
+export default Home;
