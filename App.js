@@ -1,18 +1,23 @@
 import React, { Component } from 'react';
 import 'react-native-gesture-handler';
-import { AppState, View, ActivityIndicator, Platform } from 'react-native';
-import { Provider } from 'react-redux';
+import { AppState, Platform } from 'react-native';
+import settingsActions from './src/redux/settings/actions';
+import reduxContainer from './src/redux/reduxContainer';
 import { PersistGate } from 'redux-persist/integration/react';
-import { store, persistor } from './src/redux/store';
-import MainContainer from './src/screens/MainContainer';
+import { persistor } from './src/redux/store';
 import NearbyAPI from './src/utils/nearbyAPI';
 import {
   requestMultiple,
   PERMISSIONS,
   RESULTS
 } from 'react-native-permissions';
+import { setCrashlytics } from './src/utils/crashlythics';
+import { generateRandomUUID } from './src/utils/uuid';
 
-export default class App extends Component {
+import SplashScreen from './src/screens/Splash';
+import ScreenTabs from './ScreenTabs';
+
+class App extends Component {
   requestPermissions = () => {
     requestMultiple([
       PERMISSIONS.ANDROID.ACCESS_BACKGROUND_LOCATION,
@@ -80,30 +85,40 @@ export default class App extends Component {
     }
   };
 
+  componentDidMount() {
+    setCrashlytics();
+
+    if (!this.props.clientId) {
+      this.props.setClientIdAction(generateRandomUUID());
+    }
+  }
+
   componentWillUnmount = () => {
     AppState.removeEventListener('change', this._handleAppStateChange);
   };
 
-  renderLoading = () => {
-    return (
-      <View>
-        <ActivityIndicator size={'large'} />
-      </View>
-    );
-  };
-
   render() {
-    console.disableYellowBox = true;
     return (
-      <Provider store={store}>
-        <PersistGate
-          loading={this.renderLoading()}
-          persistor={persistor}
-          onBeforeLift={this.onBeforeLift}
-        >
-          <MainContainer />
-        </PersistGate>
-      </Provider>
+      <PersistGate
+        loading={<SplashScreen />}
+        persistor={persistor}
+        onBeforeLift={this.onBeforeLift}
+      >
+        <ScreenTabs showEasterEggScreens={this.props.easterEgg} />
+      </PersistGate>
     );
   }
 }
+
+function mapStateToProps(state) {
+  return {
+    easterEgg: state.settings.easterEgg,
+    clientId: state.settings.clientId
+  };
+}
+
+const dispatchToProps = {
+  setClientIdAction: settingsActions.setClientIdAction
+};
+
+export default reduxContainer(App, mapStateToProps, dispatchToProps);
