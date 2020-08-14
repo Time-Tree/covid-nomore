@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { ActionTypes } from './store';
 
-import { WiseVoiceKey } from '../../../keys';
+import keys from '../../../keys';
 
 export const getAuthAction = (
   projectId,
@@ -20,6 +20,7 @@ export const getAuthAction = (
       }
     );
 
+    console.log('Response from WiseVoice', response.data);
     const { token: authToken, user_id: userId } = response.data;
     dispatch(getAuthenticatedAction(authToken, userId));
   } catch (error) {
@@ -52,9 +53,9 @@ export const getInitBotAction = () => async (dispatch, getState) => {
     // Authenticate and store access token
     await dispatch(
       getAuthAction(
-        WiseVoiceKey.projectId,
-        WiseVoiceKey.clientKey,
-        WiseVoiceKey.channel
+        keys.WiseVoiceKey.projectId,
+        keys.WiseVoiceKey.clientKey,
+        keys.WiseVoiceKey.channel
       )
     );
 
