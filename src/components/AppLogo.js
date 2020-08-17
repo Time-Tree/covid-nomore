@@ -2,7 +2,7 @@ import React from 'react';
 import { Image, View, StyleSheet } from 'react-native';
 import logo from '../../images/appLogo.png';
 
-const StatusHeader = ({ style = {} }) => {
+const AppLogo = ({ style = {} }) => {
   return (
     <View style={style}>
       <Image style={styles.logo} source={logo} />
@@ -17,4 +17,4 @@ const styles = StyleSheet.create({
   }
 });
 
-export default StatusHeader;
+export default AppLogo;
