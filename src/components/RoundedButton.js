@@ -5,6 +5,7 @@ import { Button } from 'react-native-elements';
 const RoundedButton = ({
   containerStyle = {},
   buttonStyle = {},
+  titleStyle = {},
   shadow = true,
   ...props
 }) => {
@@ -18,8 +19,8 @@ const RoundedButton = ({
         ...shadowStyles
       }}
       buttonStyle={{ ...styles.button, ...buttonStyle }}
+      titleStyle={{ ...styles.title, ...titleStyle }}
       iconContainerStyle={styles.iconContainer}
-      titleStyle={styles.title}
       {...props}
     />
   );
@@ -27,7 +28,8 @@ const RoundedButton = ({
 
 const styles = StyleSheet.create({
   container: {
-    width: 255
+    width: 255,
+    height: 48
   },
   shadow: {
     /* ios only!
@@ -37,8 +39,10 @@ const styles = StyleSheet.create({
     elevation: 8
   },
   button: {
-    borderRadius: 25,
-    height: 54
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 25
   },
   title: {
     fontSize: 15
