@@ -21,7 +21,7 @@ const Test = () => {
         <Image source={picHistory} style={styles.img} resizeMode="contain" />
       </RoundedCard>
       <RoundedCard style={{ ...styles.card, backgroundColor: '#00C0FF' }}>
-        <Text style={styles.cardText}>My result</Text>
+        <Text style={{ ...styles.cardText, color: '#fff' }}>My result</Text>
         <RoundedButton
           title="GET RESULT"
           containerStyle={styles.btnContainer}
