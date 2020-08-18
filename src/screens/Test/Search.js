@@ -15,7 +15,6 @@ const Search = ({ navigation }) => {
   const statusBarHeight = StatusBar.currentHeight;
 
   const [cnp, setCnp] = useState('');
-  const [cnpValid, setCnpValid] = useState(true);
   const [testNumber, setTestNumber] = useState('');
 
   return (
@@ -77,8 +76,7 @@ const styles = StyleSheet.create({
   card: {
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
-    paddingBottom: 36,
-    flex: 1
+    paddingBottom: 36
   },
   header: {
     fontSize: 34,

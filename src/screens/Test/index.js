@@ -1,14 +1,11 @@
 import React from 'react';
-import { Image, Text, View, StyleSheet, ScrollView } from 'react-native';
-import { RoundedCard, AppLogo, RoundedButton } from '../../components';
 
 import Main from './Main';
 import Search from './Search';
+import Results from './Results';
 
 const Test = props => {
-  return <Search {...props} />;
+  return <Search {...props} result="negative" />;
 };
-
-const styles = StyleSheet.create({});
 
 export default Test;
