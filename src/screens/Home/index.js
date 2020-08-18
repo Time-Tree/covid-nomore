@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import StatusHeader from './StatusHeader';
 import RiskProgress from './RiskProgress';
@@ -22,30 +22,33 @@ const Home = () => {
   const onFeedback = feelingFeedback => setFeeling(feelingFeedback);
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <StatusHeader
-        isActive={isActive}
-        onActivatePress={() => setIsActive(true)}
-      />
-      <RiskProgress riskPercentage={50} />
-      <FeelingFeedbackCard
-        selectedFeedback={feeling}
-        vitalsChecked={vitalsChecked}
-        onFeedback={onFeedback}
-      />
-      <FeelingFeedbackModal show={showFeelingModal} onFeedback={onFeedback} />
-      <VitalsCheckModal
-        show={showVitalsCheckModal}
-        check={() => setVitalsChecked(true)}
-        snooze={() => setVitalsModalDismissed(true)}
-      />
-    </ScrollView>
+    <View style={styles.container}>
+      <ScrollView>
+        <StatusHeader
+          isActive={isActive}
+          onActivatePress={() => setIsActive(true)}
+        />
+        <RiskProgress riskPercentage={50} />
+        <FeelingFeedbackCard
+          selectedFeedback={feeling}
+          vitalsChecked={vitalsChecked}
+          onFeedback={onFeedback}
+        />
+        <FeelingFeedbackModal show={showFeelingModal} onFeedback={onFeedback} />
+        <VitalsCheckModal
+          show={showVitalsCheckModal}
+          check={() => setVitalsChecked(true)}
+          snooze={() => setVitalsModalDismissed(true)}
+        />
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#f7f8fc'
+    backgroundColor: '#f7f8fc',
+    flex: 1
   }
 });
 

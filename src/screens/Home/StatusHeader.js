@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Image, Text, StyleSheet } from 'react-native';
+import { StatusBar, View, Image, Text, StyleSheet } from 'react-native';
 
 import { RoundedCard, AppLogo, RoundedButton } from '../../components';
 import serviceActive from '../../../images/serviceActive.png';
@@ -11,8 +11,10 @@ const StatusHeader = ({ isActive, onActivatePress }) => {
     ? "Open the app once a day\n to check it's status"
     : 'Press this button to allow\n our service to work properly.';
 
+  const statusBarHeight = StatusBar.currentHeight;
+
   return (
-    <RoundedCard style={styles.card}>
+    <RoundedCard style={{ ...styles.card, paddingTop: statusBarHeight + 20 }}>
       <AppLogo />
       <View style={styles.statusWrapper}>
         <Text style={styles.statusText}>
@@ -42,7 +44,6 @@ const styles = StyleSheet.create({
   card: {
     borderTopLeftRadius: 0,
     borderTopRightRadius: 0,
-    paddingTop: 45,
     paddingLeft: 32,
     paddingBottom: 25
   },
