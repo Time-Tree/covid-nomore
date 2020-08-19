@@ -5,7 +5,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import HomeScreen from './src/screens/Home';
-import TestResultsScreen from './src/screens/Test';
+import TestResultsScreen from './src/screens/Test/Main';
+import SurveyScreen from './src/screens/Survey/Main';
 
 import NearbyContainer from './src/screens/NearbyContainer';
 import TokensContainer from './src/screens/TokensContainer';
@@ -35,6 +36,8 @@ const screenOptions = ({ route }) => ({
       iconName = 'security';
     } else if (route.name === 'Test') {
       iconName = 'clipboard-check';
+    } else if (route.name === 'Survey') {
+      iconName = 'clipboard-check';
     }
     return <MaterialCommunityIcon name={iconName} size={size} color={color} />;
   }
@@ -59,6 +62,7 @@ const ScreenTabs = ({ showEasterEggScreens = false }) => {
         >
           <Tab.Screen name="Home" component={HomeScreen} />
           <Tab.Screen name="Test" component={TestResultsScreen} />
+          <Tab.Screen name="Survey" component={SurveyScreen} />
           <Tab.Screen name="Protect" component={ProtectContainer} />
           <Tab.Screen name="Status" component={StatusContainer} />
           {showEasterEggScreens && (
