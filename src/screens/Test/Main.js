@@ -1,77 +1,52 @@
 import React from 'react';
-import {
-  View,
-  Image,
-  Text,
-  StyleSheet,
-  ScrollView,
-  StatusBar
-} from 'react-native';
-import { RoundedCard, AppLogo, RoundedButton } from '../../components';
+import { Image, Text, StyleSheet } from 'react-native';
+import { BasicScreenShell, RoundedCard, RoundedButton } from '../../components';
 
 import picHistory from './picResultHistory.png';
 import picMyResult from './picMyResult.png';
 import picChat from './picChat.png';
 
 const Main = ({ navigation }) => {
-  const statusBarHeight = StatusBar.currentHeight;
-
   return (
-    <View
-      style={{
-        ...styles.container,
-        paddingTop: statusBarHeight
-      }}
-    >
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <AppLogo />
-        <RoundedCard style={styles.card}>
-          <Text style={styles.cardText}>Result{'\n'}history</Text>
-          <RoundedButton
-            title="SHOW"
-            containerStyle={styles.btnContainer}
-            buttonStyle={styles.blueBtn}
-            onPress={() => {}}
-          />
-          <Image source={picHistory} style={styles.img} resizeMode="contain" />
-        </RoundedCard>
-        <RoundedCard style={{ ...styles.card, backgroundColor: '#00C0FF' }}>
-          <Text style={{ ...styles.cardText, color: '#fff' }}>My result</Text>
-          <RoundedButton
-            title="GET RESULT"
-            containerStyle={styles.btnContainer}
-            buttonStyle={styles.whiteBtn}
-            titleStyle={styles.whiteBtnTitle}
-            onPress={() => {}}
-          />
-          <Image source={picMyResult} style={styles.img} resizeMode="contain" />
-        </RoundedCard>
-        <RoundedCard style={styles.card}>
-          <Text style={styles.cardText}>Healthcare{'\n'}provider</Text>
-          <RoundedButton
-            title="START CHAT"
-            containerStyle={styles.btnContainer}
-            buttonStyle={styles.blueBtn}
-            onPress={() => navigation.navigate('Chat')}
-          />
-          <Image source={picChat} style={styles.img} resizeMode="contain" />
-        </RoundedCard>
-      </ScrollView>
-    </View>
+    <BasicScreenShell>
+      <RoundedCard style={styles.card}>
+        <Text style={styles.cardText}>Result{'\n'}history</Text>
+        <RoundedButton
+          title="SHOW"
+          containerStyle={styles.btnContainer}
+          buttonStyle={styles.blueBtn}
+          onPress={() => {}}
+        />
+        <Image source={picHistory} style={styles.img} resizeMode="contain" />
+      </RoundedCard>
+      <RoundedCard style={{ ...styles.card, backgroundColor: '#00C0FF' }}>
+        <Text style={{ ...styles.cardText, color: '#fff' }}>My result</Text>
+        <RoundedButton
+          title="GET RESULT"
+          containerStyle={styles.btnContainer}
+          buttonStyle={styles.whiteBtn}
+          titleStyle={styles.whiteBtnTitle}
+          onPress={() => {}}
+        />
+        <Image source={picMyResult} style={styles.img} resizeMode="contain" />
+      </RoundedCard>
+      <RoundedCard style={{ ...styles.card, marginBottom: 0 }}>
+        <Text style={styles.cardText}>Healthcare{'\n'}provider</Text>
+        <RoundedButton
+          title="START CHAT"
+          containerStyle={styles.btnContainer}
+          buttonStyle={styles.blueBtn}
+          onPress={() => navigation.navigate('Chat')}
+        />
+        <Image source={picChat} style={styles.img} resizeMode="contain" />
+      </RoundedCard>
+    </BasicScreenShell>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#f7f8fc',
-    flex: 1
-  },
-  scroll: {
-    padding: 16,
-    paddingTop: 20
-  },
   card: {
-    marginTop: 16,
+    marginBottom: 16,
     height: 195,
     position: 'relative'
   },
