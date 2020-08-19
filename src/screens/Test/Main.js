@@ -1,6 +1,10 @@
 import React from 'react';
 import { Image, Text, StyleSheet } from 'react-native';
-import { BasicScreenShell, RoundedCard, RoundedButton } from '../../components';
+import {
+  ScrollableScreenShell,
+  RoundedCard,
+  RoundedButton
+} from '../../components';
 
 import picHistory from './picResultHistory.png';
 import picMyResult from './picMyResult.png';
@@ -8,7 +12,7 @@ import picChat from './picChat.png';
 
 const Main = ({ navigation }) => {
   return (
-    <BasicScreenShell>
+    <ScrollableScreenShell showLogo>
       <RoundedCard style={styles.card}>
         <Text style={styles.cardText}>Result{'\n'}history</Text>
         <RoundedButton
@@ -40,7 +44,7 @@ const Main = ({ navigation }) => {
         />
         <Image source={picChat} style={styles.img} resizeMode="contain" />
       </RoundedCard>
-    </BasicScreenShell>
+    </ScrollableScreenShell>
   );
 };
 

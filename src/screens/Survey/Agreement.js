@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import { Text, StyleSheet, View } from 'react-native';
 import { CheckBox } from 'react-native-elements';
-import { BasicScreenShell, RoundedCard, RoundedButton } from '../../components';
+import {
+  ScrollableScreenShell,
+  RoundedCard,
+  RoundedButton
+} from '../../components';
 
 const Main = ({ navigation }) => {
   const [userAgrees, setUserAgrees] = useState(false);
 
   return (
-    <BasicScreenShell>
+    <ScrollableScreenShell showLogo>
       <RoundedCard style={styles.card}>
         <Text style={styles.header}>Covid-19 Form</Text>
         <Text style={styles.text}>
@@ -60,7 +64,7 @@ const Main = ({ navigation }) => {
           onPress={() => {}}
         />
       </RoundedCard>
-    </BasicScreenShell>
+    </ScrollableScreenShell>
   );
 };
 

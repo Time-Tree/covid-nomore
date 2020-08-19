@@ -1,10 +1,14 @@
 import React from 'react';
 import { Text, StyleSheet } from 'react-native';
-import { BasicScreenShell, RoundedCard, RoundedButton } from '../../components';
+import {
+  ScrollableScreenShell,
+  RoundedCard,
+  RoundedButton
+} from '../../components';
 
 const Main = ({ navigation }) => {
   return (
-    <BasicScreenShell>
+    <ScrollableScreenShell showLogo>
       <RoundedCard style={styles.card}>
         <Text style={styles.header}>Survey</Text>
         <Text style={styles.text}>
@@ -31,7 +35,7 @@ const Main = ({ navigation }) => {
           onPress={() => {}}
         />
       </RoundedCard>
-    </BasicScreenShell>
+    </ScrollableScreenShell>
   );
 };
 

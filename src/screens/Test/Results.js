@@ -1,10 +1,12 @@
 import React from 'react';
-import { Text, StyleSheet, ScrollView, StatusBar, View } from 'react-native';
-import { RoundedCard, ScreenHeader } from '../../components';
+import { Text, StyleSheet } from 'react-native';
+import {
+  ScrollableScreenShell,
+  RoundedCard,
+  ScreenHeader
+} from '../../components';
 
 const Results = ({ navigation, result = null }) => {
-  const statusBarHeight = StatusBar.currentHeight;
-
   const resultColor = result === 'negative' ? '#00c0ff' : '#ff436d';
   const resultBadgeStyle = {
     ...styles.result,
@@ -13,60 +15,49 @@ const Results = ({ navigation, result = null }) => {
   };
 
   return (
-    <View
-      style={{
-        ...styles.container,
-        paddingTop: statusBarHeight
-      }}
-    >
-      <ScrollView>
-        <ScreenHeader
-          title="My result"
-          back={() => navigation.navigate('Chat')}
-        />
-        <RoundedCard style={styles.card}>
-          <Text style={styles.header}>Your result:</Text>
-          {result ? (
-            <Text style={resultBadgeStyle}>{result}</Text>
-          ) : (
-            <Text style={styles.notFound}>Data not found</Text>
-          )}
-        </RoundedCard>
-
-        {result && (
-          <RoundedCard style={styles.card}>
-            <Text style={styles.header}>What should I do?</Text>
-            <Text style={styles.text}>
-              Your healthcare provider, your national public health authority
-              and your employer are all potential sources of accurate
-              information on COVID-19 and whether it is in your area. It is
-              important to be informed of the situation where you live and take
-              appropriate measures to protect yourself.{'\n'}If you are in an
-              area where there is an outbreak of COVID-19 you need to take the
-              risk of infection seriously. Follow the advice issued by national
-              and local health authorities.You can ask any questions to
-              healthcare provider in the
-              <Text
-                style={{ ...styles.link, ...styles.text }}
-                onPress={() => navigation.navigate('Chat')}
-              >
-                {' '}
-                chat
-              </Text>
-              .
-            </Text>
-          </RoundedCard>
+    <ScrollableScreenShell noPadding>
+      <ScreenHeader
+        title="My result"
+        back={() => navigation.navigate('Chat')}
+      />
+      <RoundedCard style={styles.card}>
+        <Text style={styles.header}>Your result:</Text>
+        {result ? (
+          <Text style={resultBadgeStyle}>{result}</Text>
+        ) : (
+          <Text style={styles.notFound}>Data not found</Text>
         )}
-      </ScrollView>
-    </View>
+      </RoundedCard>
+
+      {result && (
+        <RoundedCard style={styles.card}>
+          <Text style={styles.header}>What should I do?</Text>
+          <Text style={styles.text}>
+            Your healthcare provider, your national public health authority and
+            and your employer are all potential sources of accurate information
+            information on COVID-19 and whether it is in your area. It is
+            important to be informed of the situation where you live and take
+            appropriate measures to protect yourself.{'\n'}If you are in an area
+            area where there is an outbreak of COVID-19 you need to take the
+            risk of infection seriously. Follow the advice issued by national
+            and local health authorities.You can ask any questions to healthcare
+            healthcare provider in the
+            <Text
+              style={{ ...styles.link, ...styles.text }}
+              onPress={() => navigation.navigate('Chat')}
+            >
+              {' '}
+              chat
+            </Text>
+            .
+          </Text>
+        </RoundedCard>
+      )}
+    </ScrollableScreenShell>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#f7f8fc',
-    flex: 1
-  },
   card: {
     minHeight: 181,
     paddingVertical: 24,

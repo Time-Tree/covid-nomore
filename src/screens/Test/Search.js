@@ -1,29 +1,20 @@
 import React, { useState } from 'react';
+import { Image, Text, TextInput, StyleSheet } from 'react-native';
 import {
-  Image,
-  Text,
-  TextInput,
-  StyleSheet,
-  ScrollView,
-  StatusBar
-} from 'react-native';
-import { RoundedCard, RoundedButton, ScreenHeader } from '../../components';
+  ScrollableScreenShell,
+  RoundedCard,
+  RoundedButton,
+  ScreenHeader
+} from '../../components';
 
 import picSearchResult from './picSearchResult.png';
 
 const Search = ({ navigation }) => {
-  const statusBarHeight = StatusBar.currentHeight;
-
   const [cnp, setCnp] = useState('');
   const [testNumber, setTestNumber] = useState('');
 
   return (
-    <ScrollView
-      contentContainerStyle={{
-        ...styles.container,
-        paddingTop: statusBarHeight
-      }}
-    >
+    <ScrollableScreenShell noPadding>
       <ScreenHeader
         title="My result"
         back={() => navigation.navigate('Chat')}
@@ -65,14 +56,11 @@ const Search = ({ navigation }) => {
           onPress={() => {}}
         />
       </RoundedCard>
-    </ScrollView>
+    </ScrollableScreenShell>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#f7f8fc'
-  },
   card: {
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
