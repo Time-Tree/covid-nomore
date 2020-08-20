@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Text, StyleSheet } from 'react-native';
+import { Text, StyleSheet, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {
   ScrollableScreenShell,
@@ -77,32 +77,33 @@ const Questionnaire = ({ navigation }) => {
           <Text style={styles.question}>{question.question}</Text>
 
           {answerControl}
-
-          <LinearGradient
-            start={{ x: 1, y: 1 }}
-            end={{ x: 0, y: 0 }}
-            colors={['#0060a8', '#00c0ff']}
-            style={styles.footer}
-          >
-            <RoundedButton
-              title="BACK"
-              containerStyle={{ ...styles.btnContainer, marginRight: 3.5 }}
-              buttonStyle={{ backgroundColor: '#fff' }}
-              titleStyle={{ color: '#2c314c' }}
-              disabled={questionIndex < 1}
-              onPress={() => setQuestionIndex(questionIndex - 1)}
-            />
-            <RoundedButton
-              title="NEXT"
-              containerStyle={{ ...styles.btnContainer, marginLeft: 3.5 }}
-              buttonStyle={{ backgroundColor: '#fff', opacity: 0.87 }}
-              titleStyle={{ color: '#2c314c', opacity: 0.77 }}
-              disabled={questionIndex >= questions.length - 1}
-              onPress={() => setQuestionIndex(questionIndex + 1)}
-            />
-          </LinearGradient>
         </RoundedCard>
       </ScrollableScreenShell>
+      <View style={styles.footer}>
+        <LinearGradient
+          start={{ x: 1, y: 1 }}
+          end={{ x: 0, y: 0 }}
+          colors={['#0060a8', '#00c0ff']}
+          style={styles.footerInner}
+        >
+          <RoundedButton
+            title="BACK"
+            containerStyle={{ ...styles.btnContainer, marginRight: 3.5 }}
+            buttonStyle={{ backgroundColor: '#fff' }}
+            titleStyle={{ color: '#2c314c' }}
+            disabled={questionIndex < 1}
+            onPress={() => setQuestionIndex(questionIndex - 1)}
+          />
+          <RoundedButton
+            title="NEXT"
+            containerStyle={{ ...styles.btnContainer, marginLeft: 3.5 }}
+            buttonStyle={{ backgroundColor: '#fff', opacity: 0.87 }}
+            titleStyle={{ color: '#2c314c', opacity: 0.77 }}
+            disabled={questionIndex >= questions.length - 1}
+            onPress={() => setQuestionIndex(questionIndex + 1)}
+          />
+        </LinearGradient>
+      </View>
     </>
   );
 };
@@ -130,14 +131,17 @@ const styles = StyleSheet.create({
     marginVertical: 16
   },
   footer: {
+    backgroundColor: '#fff',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0
+  },
+  footerInner: {
     height: 80,
     borderTopRightRadius: 36,
     borderTopLeftRadius: 36,
     padding: 16,
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     display: 'flex',
     flexDirection: 'row'
   },
