@@ -7,11 +7,11 @@ import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIc
 import HomeScreen from './src/screens/Home';
 import TestResultsScreen from './src/screens/Test/Main';
 import SurveyScreen from './src/screens/Survey/Main';
+import ChatScreen from './src/screens/Chat';
 
 import NearbyContainer from './src/screens/NearbyContainer';
 import TokensContainer from './src/screens/TokensContainer';
 import StatusContainer from './src/screens/StatusContainer';
-import ChatContainer from './src/screens/ChatContainer';
 import ReportMeContainer from './src/screens/ReportMeContainer';
 import ProtectContainer from './src/screens/ProtectContainer';
 
@@ -71,7 +71,7 @@ const ScreenTabs = ({ showEasterEggScreens = false }) => {
               <Tab.Screen name="Logs" component={NearbyContainer} />
             </>
           )}
-          <Tab.Screen name="Chat" component={ChatContainer} />
+          <Tab.Screen name="Chat" component={ChatScreen} />
           <Tab.Screen name="Report me" component={ReportMeContainer} />
         </Tab.Navigator>
       </NavigationContainer>
