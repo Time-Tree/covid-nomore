@@ -8,8 +8,8 @@ import HomeScreen from './src/screens/Home';
 import TestResultsScreen from './src/screens/Test/Main';
 import SurveyScreen from './src/screens/Survey/Main';
 import ChatScreen from './src/screens/Chat';
+import ActivityScreen from './src/screens/Activity';
 
-import NearbyContainer from './src/screens/NearbyContainer';
 import TokensContainer from './src/screens/TokensContainer';
 import StatusContainer from './src/screens/StatusContainer';
 import ReportMeContainer from './src/screens/ReportMeContainer';
@@ -24,8 +24,8 @@ const screenOptions = ({ route }) => ({
       iconName = focused ? 'home' : 'home-outline';
     } else if (route.name === 'Tokens') {
       iconName = focused ? 'account-search' : 'account-search-outline';
-    } else if (route.name === 'Logs') {
-      iconName = 'format-list-numbered-rtl';
+    } else if (route.name === 'Activity') {
+      iconName = 'bluetooth';
     } else if (route.name === 'Status') {
       iconName = 'account-check-outline';
     } else if (route.name === 'Chat') {
@@ -68,7 +68,7 @@ const ScreenTabs = ({ showEasterEggScreens = false }) => {
           {showEasterEggScreens && (
             <>
               <Tab.Screen name="Tokens" component={TokensContainer} />
-              <Tab.Screen name="Logs" component={NearbyContainer} />
+              <Tab.Screen name="Activity" component={ActivityScreen} />
             </>
           )}
           <Tab.Screen name="Chat" component={ChatScreen} />
