@@ -91,16 +91,28 @@ const Questionnaire = ({ navigation }) => {
             containerStyle={{ ...styles.btnContainer, marginRight: 3.5 }}
             buttonStyle={{ backgroundColor: '#fff' }}
             titleStyle={{ color: '#2c314c' }}
-            disabled={questionIndex < 1}
-            onPress={() => setQuestionIndex(questionIndex - 1)}
+            /* disabled={questionIndex < 1} */
+            onPress={() => {
+              if (questionIndex < 1) {
+                navigation.goBack();
+              } else {
+                setQuestionIndex(questionIndex - 1);
+              }
+            }}
           />
           <RoundedButton
             title="NEXT"
             containerStyle={{ ...styles.btnContainer, marginLeft: 3.5 }}
             buttonStyle={{ backgroundColor: '#fff', opacity: 0.87 }}
             titleStyle={{ color: '#2c314c', opacity: 0.77 }}
-            disabled={questionIndex >= questions.length - 1}
-            onPress={() => setQuestionIndex(questionIndex + 1)}
+            /* disabled={questionIndex >= questions.length - 1} */
+            onPress={() => {
+              if (questionIndex >= questions.length - 1) {
+                navigation.navigate('Completed');
+              } else {
+                setQuestionIndex(questionIndex + 1);
+              }
+            }}
           />
         </LinearGradient>
       </View>

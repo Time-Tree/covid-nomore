@@ -6,7 +6,7 @@ import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIc
 
 import HomeScreen from './src/screens/Home';
 import TestResultsScreen from './src/screens/Test';
-import SurveyScreen from './src/screens/Survey/Main';
+import SurveyScreen from './src/screens/Survey';
 import ChatScreen from './src/screens/Chat';
 import ActivityScreen from './src/screens/Activity';
 
@@ -40,7 +40,8 @@ const screenOptions = ({ route }) => ({
       iconName = 'clipboard-check';
     }
     return <MaterialCommunityIcon name={iconName} size={size} color={color} />;
-  }
+  },
+  unmountOnBlur: true
 });
 
 const ScreenTabs = ({ showEasterEggScreens = false }) => {
@@ -61,11 +62,7 @@ const ScreenTabs = ({ showEasterEggScreens = false }) => {
           }}
         >
           <Tab.Screen name="Home" component={HomeScreen} />
-          <Tab.Screen
-            name="Test"
-            component={TestResultsScreen}
-            options={{ unmountOnBlur: true }}
-          />
+          <Tab.Screen name="Test" component={TestResultsScreen} />
           <Tab.Screen name="Survey" component={SurveyScreen} />
           <Tab.Screen name="Protect" component={ProtectContainer} />
           <Tab.Screen name="Status" component={StatusContainer} />

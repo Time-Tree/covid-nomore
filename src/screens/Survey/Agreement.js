@@ -61,7 +61,7 @@ const Main = ({ navigation }) => {
           disabled={!userAgrees}
           containerStyle={styles.btnContainer}
           buttonStyle={styles.btn}
-          onPress={() => {}}
+          onPress={() => navigation.navigate('Questionnaire')}
         />
       </RoundedCard>
     </ScrollableScreenShell>

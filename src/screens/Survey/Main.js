@@ -19,7 +19,7 @@ const Main = ({ navigation }) => {
           title="START SURVEY"
           containerStyle={styles.btnContainer}
           buttonStyle={styles.btn}
-          onPress={() => {}}
+          onPress={() => navigation.navigate('Agreement')}
         />
       </RoundedCard>
       <RoundedCard style={styles.card}>

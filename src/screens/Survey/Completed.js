@@ -4,7 +4,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { RoundedButton } from '../../components';
 
-const Completed = () => {
+const Completed = ({ navigation }) => {
   return (
     <>
       <StatusBar translucent backgroundColor="transparent" />
@@ -26,7 +26,7 @@ const Completed = () => {
           containerStyle={styles.btnContainer}
           buttonStyle={styles.btn}
           titleStyle={styles.btnLabel}
-          onPress={() => {}}
+          onPress={() => navigation.navigate('Home')}
         />
       </LinearGradient>
     </>
