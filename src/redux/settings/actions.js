@@ -54,6 +54,24 @@ class SettingsActions {
       });
     };
   }
+
+  setBleStatusAction(value) {
+    return dispatch => {
+      dispatch({
+        type: ActionTypes.SET_BLE_STATUS,
+        payload: value
+      });
+    };
+  }
+
+  setNearbyStatusAction(value) {
+    return dispatch => {
+      dispatch({
+        type: ActionTypes.SET_NEARBY_STATUS,
+        payload: value
+      });
+    };
+  }
 }
 
 const settingsActions = new SettingsActions();

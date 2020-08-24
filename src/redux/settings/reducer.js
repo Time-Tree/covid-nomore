@@ -38,6 +38,18 @@ function settingsReducer(state = initialState, action) {
         bleProcess: action.payload
       };
     }
+    case ActionTypes.SET_NEARBY_STATUS: {
+      return {
+        ...state,
+        nearbyStatus: action.payload
+      };
+    }
+    case ActionTypes.SET_BLE_STATUS: {
+      return {
+        ...state,
+        bleStatus: action.payload
+      };
+    }
     default:
       return state;
   }
