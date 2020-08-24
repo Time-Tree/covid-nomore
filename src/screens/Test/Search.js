@@ -15,10 +15,7 @@ const Search = ({ navigation }) => {
 
   return (
     <ScrollableScreenShell noPadding>
-      <ScreenHeader
-        title="My result"
-        back={() => navigation.navigate('Chat')}
-      />
+      <ScreenHeader title="My result" back={() => navigation.goBack()} />
       <RoundedCard style={styles.card}>
         <Text style={styles.header}>Search your result</Text>
         <Text style={styles.text}>

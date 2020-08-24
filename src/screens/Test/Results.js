@@ -6,7 +6,10 @@ import {
   ScreenHeader
 } from '../../components';
 
-const Results = ({ navigation, result = null }) => {
+const Results = ({ navigation }) => {
+  const results = ['negative', 'positive', null];
+  const result = results[Math.floor(Math.random() * results.length)]; // random result
+
   const resultColor = result === 'negative' ? '#00c0ff' : '#ff436d';
   const resultBadgeStyle = {
     ...styles.result,
@@ -16,10 +19,7 @@ const Results = ({ navigation, result = null }) => {
 
   return (
     <ScrollableScreenShell noPadding>
-      <ScreenHeader
-        title="My result"
-        back={() => navigation.navigate('Chat')}
-      />
+      <ScreenHeader title="My result" back={() => navigation.goBack()} />
       <RoundedCard style={styles.card}>
         <Text style={styles.header}>Your result:</Text>
         {result ? (
