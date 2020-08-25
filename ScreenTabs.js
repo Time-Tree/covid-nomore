@@ -45,6 +45,16 @@ const screenOptions = ({ route }) => ({
 });
 
 const ScreenTabs = ({ showEasterEggScreens = false }) => {
+  const showTabBar = route => {
+    const routeName = route.state
+      ? route.state.routes[route.state.index].name
+      : '';
+
+    const routesWithoutTabBar = ['Questionnaire', 'Completed'];
+
+    return routesWithoutTabBar.includes(routeName) === false;
+  };
+
   return (
     <>
       <StatusBar
@@ -63,7 +73,13 @@ const ScreenTabs = ({ showEasterEggScreens = false }) => {
         >
           <Tab.Screen name="Home" component={HomeScreen} />
           <Tab.Screen name="Test" component={TestResultsScreen} />
-          <Tab.Screen name="Survey" component={SurveyScreen} />
+          <Tab.Screen
+            name="Survey"
+            component={SurveyScreen}
+            options={({ route }) => ({
+              tabBarVisible: showTabBar(route)
+            })}
+          />
           <Tab.Screen name="Protect" component={ProtectContainer} />
           <Tab.Screen name="Status" component={StatusContainer} />
           {showEasterEggScreens && (

@@ -67,7 +67,7 @@ const Questionnaire = ({ navigation }) => {
       <ScrollableScreenShell noPadding>
         <ScreenHeader
           title="Covid-19 Form"
-          back={() => navigation.navigate('Chat')}
+          back={() => navigation.navigate('Main')}
         />
         <RoundedCard style={styles.card}>
           <Text style={styles.questionNumber}>
