@@ -50,7 +50,7 @@ const Search = ({ navigation }) => {
           title="SEARCH"
           containerStyle={styles.btnContainer}
           buttonStyle={styles.btn}
-          onPress={() => {}}
+          onPress={() => navigation.navigate('Results')}
         />
       </RoundedCard>
     </ScrollableScreenShell>

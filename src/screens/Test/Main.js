@@ -19,7 +19,7 @@ const Main = ({ navigation }) => {
           title="SHOW"
           containerStyle={styles.btnContainer}
           buttonStyle={styles.blueBtn}
-          onPress={() => navigation.navigate('Search')}
+          onPress={() => {}}
         />
         <Image source={picHistory} style={styles.img} resizeMode="contain" />
       </RoundedCard>
@@ -30,7 +30,7 @@ const Main = ({ navigation }) => {
           containerStyle={styles.btnContainer}
           buttonStyle={styles.whiteBtn}
           titleStyle={styles.whiteBtnTitle}
-          onPress={() => navigation.navigate('Results')}
+          onPress={() => navigation.navigate('Search')}
         />
         <Image source={picMyResult} style={styles.img} resizeMode="contain" />
       </RoundedCard>
