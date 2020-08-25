@@ -44,17 +44,17 @@ const screenOptions = ({ route }) => ({
   unmountOnBlur: true
 });
 
+const showTabBar = route => {
+  const routeName = route.state
+    ? route.state.routes[route.state.index].name
+    : '';
+
+  const routesWithoutTabBar = ['Questionnaire', 'Completed'];
+
+  return routesWithoutTabBar.includes(routeName) === false;
+};
+
 const ScreenTabs = ({ showEasterEggScreens = false }) => {
-  const showTabBar = route => {
-    const routeName = route.state
-      ? route.state.routes[route.state.index].name
-      : '';
-
-    const routesWithoutTabBar = ['Questionnaire', 'Completed'];
-
-    return routesWithoutTabBar.includes(routeName) === false;
-  };
-
   return (
     <>
       <StatusBar
