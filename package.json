@@ -38,6 +38,7 @@
     "react-native-safe-area-context": "^0.7.3",
     "react-native-screens": "^2.4.0",
     "react-native-sqlite-storage": "^5.0.0",
+    "react-native-swipe-gestures": "^1.0.5",
     "react-native-vector-icons": "^7.0.0",
     "react-native-webview": "^9.2.2",
     "react-redux": "^7.2.0",

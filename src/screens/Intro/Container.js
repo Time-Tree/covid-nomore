@@ -1,11 +1,27 @@
 import React from 'react';
 import { ScrollView, StatusBar, StyleSheet } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import GestureRecognizer from 'react-native-swipe-gestures';
 import DotsPagination from './DotsPagination';
 
-const Container = ({ step = 1, children }) => {
+const Container = ({
+  step = 1,
+  onGoBack = () => {},
+  onGoForward = () => {},
+  children
+}) => {
+  const gestureProps = {
+    config: {
+      velocityThreshold: 0.3,
+      directionalOffsetThreshold: 80
+    },
+    style: { flex: 1 },
+    onSwipeLeft: onGoForward,
+    onSwipeRight: onGoBack
+  };
+
   return (
-    <>
+    <GestureRecognizer {...gestureProps}>
       <StatusBar translucent backgroundColor="transparent" />
       <ScrollView contentContainerStyle={styles.container}>
         <LinearGradient
@@ -18,7 +34,7 @@ const Container = ({ step = 1, children }) => {
           <DotsPagination stepsCount={4} step={step} />
         </LinearGradient>
       </ScrollView>
-    </>
+    </GestureRecognizer>
   );
 };
 
