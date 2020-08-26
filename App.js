@@ -15,6 +15,7 @@ import { setCrashlytics } from './src/utils/crashlythics';
 import { generateRandomUUID } from './src/utils/uuid';
 
 import SplashScreen from './src/screens/Splash';
+import IntroScreen from './src/screens/Intro';
 import ScreenTabs from './ScreenTabs';
 
 class App extends Component {
