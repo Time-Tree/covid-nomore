@@ -88,12 +88,12 @@ class NearbyAPI {
           }
         }
       }
-      console.log('Events found: ', newEvents.length);
 
-      store.dispatch(eventsActions.addEventAction(newEvents));
-      store.dispatch(handshakeActions.addHandshakeAction(handshakes));
-      store.dispatch(eventsActions.setSync(sync));
       if (newEvents.length) {
+        store.dispatch(eventsActions.addEventAction(newEvents));
+        store.dispatch(handshakeActions.addHandshakeAction(handshakes));
+        store.dispatch(eventsActions.setSync(sync));
+        console.log('Events found: ', newEvents.length);
         await db.executeSql(
           `DELETE FROM NearbyEvents WHERE timestamp <= ${sync}`
         );

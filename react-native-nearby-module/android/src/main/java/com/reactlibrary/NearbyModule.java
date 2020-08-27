@@ -1,5 +1,6 @@
 package com.reactlibrary;
 
+import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -45,8 +46,10 @@ public class NearbyModule extends ReactContextBaseJavaModule implements ServiceC
         Log.i(TAG, "onServiceConnected");
         NearbyService.NearbyBinder b = (NearbyService.NearbyBinder) binder;
         nearbyService = b.getService();
-//        nearbyService.setCurrentApplication(getCurrentActivity().getApplication());
-        nearbyService.setCurrentApplication(this.reactContext.getCurrentActivity().getApplication());
+        Activity currentActivity = this.reactContext.getCurrentActivity();
+        if (currentActivity != null) {
+            nearbyService.setCurrentApplication(currentActivity.getApplication());
+        }
         mBound = true;
     }
 

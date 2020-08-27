@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import 'react-native-gesture-handler';
+import timer from 'react-native-timer';
 import { AppState, Platform } from 'react-native';
 import settingsActions from './src/redux/settings/actions';
 import reduxContainer from './src/redux/reduxContainer';
@@ -19,6 +20,8 @@ import IntroScreen from './src/screens/Intro';
 import ScreenTabs from './ScreenTabs';
 
 class App extends Component {
+  state = { interval: null, appState: null };
+
   requestPermissions = () => {
     requestMultiple([
       PERMISSIONS.ANDROID.ACCESS_BACKGROUND_LOCATION,
@@ -50,39 +53,41 @@ class App extends Component {
       });
   };
 
-  _interval = null;
-
   _handleAppStateChange = nextAppState => {
     console.log('_handleAppStateChange', nextAppState);
-    if (nextAppState === 'active' && !this._interval) {
+    if (nextAppState === 'active' && this.state.appState === 'background') {
       this.startPoller();
       NearbyAPI.restartServices();
-    } else if (nextAppState !== 'active' && this._interval) {
-      clearInterval(this._interval);
-      this._interval = null;
+    } else if (nextAppState !== 'active') {
+      this.stopPoller();
     }
+    this.setState({ appState: nextAppState });
   };
 
   startPoller = () => {
-    if (this._interval) {
-      clearInterval(this._interval);
-      this._interval = null;
-    }
+    this.stopPoller();
+    console.log('Starting poller...');
     NearbyAPI.nearbyCheck();
-    this._interval = setInterval(() => {
-      NearbyAPI.nearbyCheck();
-    }, 10000);
+    timer.setInterval(
+      'poller',
+      () => {
+        NearbyAPI.nearbyCheck();
+      },
+      10000
+    );
+  };
+
+  stopPoller = () => {
+    console.log('Stopping poller...');
+    timer.clearInterval('poller');
   };
 
   onBeforeLift = () => {
+    AppState.removeEventListener('change');
     AppState.addEventListener('change', this._handleAppStateChange);
     this.startPoller();
     if (Platform.OS === 'android') {
-      // Should start service after permission grated
       this.requestPermissions();
-      // NearbyAPI.startService(false);
-    } else {
-      // NearbyAPI.startService(true);
     }
   };
 
