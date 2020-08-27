@@ -13,7 +13,7 @@ import ActivityScreen from './src/screens/Activity';
 import TokensContainer from './src/screens/TokensContainer';
 import StatusContainer from './src/screens/StatusContainer';
 import ReportMeContainer from './src/screens/ReportMeContainer';
-import ProtectContainer from './src/screens/ProtectContainer';
+// import ProtectContainer from './src/screens/ProtectContainer';
 
 const Tab = createBottomTabNavigator();
 
@@ -80,7 +80,7 @@ const ScreenTabs = ({ showEasterEggScreens = false }) => {
               tabBarVisible: showTabBar(route)
             })}
           />
-          <Tab.Screen name="Protect" component={ProtectContainer} />
+          {/* <Tab.Screen name="Protect" component={ProtectContainer} /> */}
           <Tab.Screen name="Status" component={StatusContainer} />
           {showEasterEggScreens && (
             <>

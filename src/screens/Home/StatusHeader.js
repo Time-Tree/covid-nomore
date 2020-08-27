@@ -5,7 +5,13 @@ import { RoundedCard, AppLogo, RoundedButton } from '../../components';
 import serviceActive from '../../../images/serviceActive.png';
 import serviceInactive from '../../../images/serviceInactive.png';
 
-const StatusHeader = ({ isActive, onActivatePress }) => {
+const StatusHeader = ({
+  isActive,
+  isLoading,
+  isDisabled,
+  error,
+  onActivatePress
+}) => {
   const status = isActive ? 'active' : 'inactive';
   const infoText = isActive
     ? "Open the app once a day\n to check it's status"
@@ -25,17 +31,23 @@ const StatusHeader = ({ isActive, onActivatePress }) => {
           source={isActive ? serviceActive : serviceInactive}
         />
       </View>
-      <Text style={styles.infoText}>{infoText}</Text>
-      {isActive || (
-        <View style={styles.btnWrapper}>
+      {!isDisabled && <Text style={styles.infoText}>{infoText}</Text>}
+      <View style={styles.btnWrapper}>
+        {isDisabled ? (
+          <Text style={styles.error}>
+            Services are disabled, please enable them from settings.
+          </Text>
+        ) : (
           <RoundedButton
-            title="ACTIVATE SERVICE"
+            title={isActive ? 'DEACTIVATE SERVICE' : 'ACTIVATE SERVICE'}
             containerStyle={styles.buttonContainer}
-            buttonStyle={styles.button}
+            buttonStyle={isActive ? styles.buttonInactive : styles.button}
             onPress={onActivatePress}
+            loading={isLoading}
           />
-        </View>
-      )}
+        )}
+      </View>
+      {error && <Text style={styles.error}>{error}</Text>}
     </RoundedCard>
   );
 };
@@ -65,10 +77,18 @@ const styles = StyleSheet.create({
     marginLeft: -32
   },
   button: {
+    backgroundColor: 'rgb(71, 189, 123)'
+  },
+  buttonInactive: {
     backgroundColor: 'rgb(255, 67, 109)'
   },
   btnWrapper: {
     alignItems: 'center'
+  },
+  error: {
+    color: 'red',
+    textAlign: 'center',
+    marginTop: 10
   }
 });
 
