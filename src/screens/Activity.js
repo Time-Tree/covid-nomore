@@ -1,5 +1,13 @@
 import * as React from 'react';
-import { View, Text, FlatList, Button, Switch, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  FlatList,
+  Button,
+  Switch,
+  StyleSheet,
+  ActivityIndicator
+} from 'react-native';
 
 import reduxContainer from '../redux/reduxContainer';
 import {
@@ -82,35 +90,59 @@ class NearbyContainer extends React.Component {
   render() {
     const { events, status } = this.props;
     const { settingsVisible, settings } = this.state;
+    const { bleStatus, nearbyStatus } = this.props.settings;
+    const loading = !(settings && settings.bleProcess !== undefined);
+
     return (
       <ScrollableScreenShell showLogo>
         <RoundedCard style={styles.card}>
           <View style={styles.headerContainer}>
-            <Text>BLE: </Text>
-            <Switch
-              onValueChange={this.toggleHandler('bleProcess')}
-              value={!!settings.bleProcess}
-            />
-            <Text>Nearby: </Text>
-            <Switch
-              onValueChange={this.toggleHandler('nearbyProcess')}
-              value={!!settings.nearbyProcess}
-            />
-            <Button title="settings" onPress={this.settingsHandler} />
+            <Text>BLE Active: </Text>
+            {loading ? (
+              <ActivityIndicator />
+            ) : (
+              <Switch
+                onValueChange={this.toggleHandler('bleProcess')}
+                value={!!settings.bleProcess}
+              />
+            )}
+            <Text>Nearby Active: </Text>
+            {loading ? (
+              <ActivityIndicator />
+            ) : (
+              <Switch
+                onValueChange={this.toggleHandler('nearbyProcess')}
+                value={!!settings.nearbyProcess}
+              />
+            )}
           </View>
+
           <View style={styles.headerContainer}>
-            <Button title="Easter Egg" onPress={this.easterEggHandler} />
+            <Text>BLE Status: </Text>
+            {bleStatus ? (
+              <Text style={{ color: 'green' }}>ON</Text>
+            ) : (
+              <Text style={{ color: 'red' }}>OFF</Text>
+            )}
+            <Text>Nearby Satus: </Text>
+            {nearbyStatus ? (
+              <Text style={{ color: 'green' }}>ON</Text>
+            ) : (
+              <Text style={{ color: 'red' }}>OFF</Text>
+            )}
+          </View>
+
+          <View style={[styles.headerContainer, { marginTop: 15 }]}>
+            <Button title="settings" onPress={this.settingsHandler} />
             {status !== 0 && (
               <Button title="Reset Status" onPress={this.healthyHandler} />
             )}
-          </View>
-          <View style={styles.headerContainer}>
-            <Text>LOGS:</Text>
-            <Button title="clear" onPress={this.clearLogsHandler} />
+            <Button title="clear logs" onPress={this.clearLogsHandler} />
+            <Button title="Close logs" onPress={this.easterEggHandler} />
           </View>
         </RoundedCard>
 
-        <RoundedCard style={styles.card}>
+        {/* <RoundedCard style={styles.card}>
           <Text style={styles.info}>
             Current publishing code: <Text style={styles.code}>1143</Text>
           </Text>
@@ -136,14 +168,14 @@ class NearbyContainer extends React.Component {
               onPress={() => {}}
             />
           </View>
-        </RoundedCard>
+        </RoundedCard> */}
 
         <RoundedCard style={styles.card}>
-          <Text style={styles.header}>Logs</Text>
           <FlatList
             data={events}
             renderItem={this.renderItem}
             keyExtractor={this.keyExtractor}
+            scrollEnabled={false}
           />
         </RoundedCard>
         <SettingsModal
@@ -159,6 +191,7 @@ class NearbyContainer extends React.Component {
 function mapStateToProps(state) {
   return {
     status: state.settings.status,
+    settings: state.settings,
     events: state.events.events
   };
 }
@@ -206,14 +239,13 @@ const styles = StyleSheet.create({
   },
   logEntry: {
     marginTop: 8,
-    fontSize: 17,
+    fontSize: 14,
     opacity: 0.87
   },
-
 
   headerContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center'
-  },
+  }
 });

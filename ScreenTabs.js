@@ -81,10 +81,10 @@ const ScreenTabs = ({ showEasterEggScreens = false }) => {
             })}
           />
           {/* <Tab.Screen name="Protect" component={ProtectContainer} /> */}
-          <Tab.Screen name="Status" component={StatusContainer} />
+          {/* <Tab.Screen name="Status" component={StatusContainer} /> */}
           {showEasterEggScreens && (
             <>
-              <Tab.Screen name="Tokens" component={TokensContainer} />
+              {/* <Tab.Screen name="Tokens" component={TokensContainer} /> */}
               <Tab.Screen name="Activity" component={ActivityScreen} />
             </>
           )}
